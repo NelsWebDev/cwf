@@ -18,3 +18,33 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model BlackCard {
+  id        String   @id @default(cuid())
+  text      String
+  pick      Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deckId    String
+  deck      Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+}
+
+model WhiteCard {
+  id        String   @id @default(cuid())
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deckId    String
+  deck      Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+}
+model Deck {
+  id        String      @id @default(cuid())
+  name      String
+  description String?
+  importedDeckId String?
+
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  blackCards BlackCard[]
+  whiteCards WhiteCard[]
+}
