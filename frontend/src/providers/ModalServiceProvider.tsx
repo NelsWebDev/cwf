@@ -1,9 +1,9 @@
-import { createContext, ReactElement, useEffect, useState } from "react";
+import { ReactElement, useEffect, useState } from "react";
 import { ModalService,  ShowModalProps } from "../types";
 import { Modal, Text } from "@mantine/core";
 import { useAuth } from "../hooks";
+import { ModalServiceContext } from "./Contexts";
 
-export const ModalServiceContext = createContext<ModalService|undefined>(undefined);
 
 const ModalServiceProvider = ({children} : {children: React.ReactNode}) => {
 
@@ -27,7 +27,7 @@ const ModalServiceProvider = ({children} : {children: React.ReactNode}) => {
             socket.off("closeModal");
             socket.off("serverMessage");
         }
-    }, [socket.connected]);
+    }, [socket]);
 
     const showModal = (props: ShowModalProps ) => {
         const {title, autoclose} = props;
@@ -68,6 +68,11 @@ const ModalServiceProvider = ({children} : {children: React.ReactNode}) => {
                     opened={isModalOpen}
                     onClose={closeModal}
                     title={title}
+                    styles={{
+                        title: {
+                            fontSize: "1.2rem",
+                        }
+                    }}
                     centered
                     withCloseButton={canClose}
                     closeOnClickOutside={canClose}
