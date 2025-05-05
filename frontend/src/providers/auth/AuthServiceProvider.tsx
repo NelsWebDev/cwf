@@ -1,9 +1,9 @@
-import { createContext, ReactElement, useEffect, useMemo, useState } from "react";
+import { ReactElement, useEffect, useMemo, useState } from "react";
 import { AuthService, LoginResponse, Socket, User } from "../../types";
 import { io } from "socket.io-client";
 import LoginPage from "./LoginPage";
+import { AuthServiceContext } from "../Contexts";
 
-export const AuthServiceContext = createContext<AuthService | undefined>(undefined);
 const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -14,7 +14,6 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
         auth: { userId: localStorage.getItem("userId") || "" },
     }), []);
     const [disconnected, setDisconnected] = useState(false);
-
 
     useEffect(() => {
         if(user?.id) {
@@ -48,7 +47,7 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
                 setIsAuthenticating(false);
             }
         }
-        catch (error) {
+        catch {
             if(!navigator.onLine) {
                 setErrorMessage("Network error: Please check your internet connection");
             } else {
@@ -79,6 +78,7 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
             setDisconnected(true);
             setErrorMessage("Disconnected from server");
         });
+
         return () => {
             socket.off("myProfile");
             socket.off("connect");
@@ -88,7 +88,7 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
             socket.off("playerLeft");
             socket.off("serverMessage");
         }
-    }, []);
+    }, [socket]);
 
     const logout = () => {
         socket.emit("logout");

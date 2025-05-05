@@ -1,9 +1,9 @@
-import { createContext, ReactElement, useEffect, useMemo, useState } from "react";
+import { ReactElement, useEffect, useMemo, useState } from "react";
 import { CardDeck, DEFAULT_RULES, GameRound, GameService, RoundStatus, Rules, User, WhiteCard } from "../types";
 import { useAuth, useModal } from "../hooks";
 import { Button, Text } from "@mantine/core";
+import { GameServiceContext } from "./Contexts";
 
-export const GameServiceContext = createContext<GameService | undefined>(undefined);
 
 
 const NotEnoughPlayers = ({endGame}: {endGame: () => void}) => {

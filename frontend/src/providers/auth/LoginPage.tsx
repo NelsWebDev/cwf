@@ -6,8 +6,8 @@ import { Button,  Container, Paper, PasswordInput, Text, TextInput, Title } from
 
 
 const LoginPage = () => {
-  const [usernameInput, setUsernameInput] = useState('');
-  const [passwordInput, setPasswordInput] = useState('');
+  const [usernameInput, setUsernameInput] = useState(import.meta.env.VITE_AUTOFILL_USERNAME || '');
+  const [passwordInput, setPasswordInput] = useState(import.meta.env.VITE_AUTOFILL_PASSWORD || '');
   const { login, errorMessage,  isAuthenticated, disconnected, reconnect} = useAuth();
 
   if (localStorage.getItem('authToken') && !isAuthenticated && !errorMessage) {
