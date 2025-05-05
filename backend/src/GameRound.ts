@@ -1,190 +1,186 @@
 import { GameUser } from "./session/GameUser";
-import { game, ioServer, socketManager } from "./singletons";
-import { BlackCard, GameRound as TGameGround, WhiteCard, RoundStatus, Socket } from "./types";
+import { game, socketManager } from "./singletons";
+import {
+  BlackCard,
+  GameRound as TGameGround,
+  WhiteCard,
+  RoundStatus,
+} from "./types";
 
 export class GameRound implements TGameGround {
-    public readonly id: string;
-    status: RoundStatus = RoundStatus.WAITING_FOR_PLAYERS;
-    winnerId?: string;
-    _plays: Map<string, WhiteCard[]> = new Map();
-    _votesToSkip: Map<string, boolean> = new Map();
-    constructor(public readonly blackCard: BlackCard, public readonly cardCzar: GameUser) {
-        this.id = crypto.randomUUID();
+  public readonly id: string;
+  status: RoundStatus = RoundStatus.WAITING_FOR_PLAYERS;
+  winnerId?: string;
+  _plays: Map<string, WhiteCard[]> = new Map();
+  _votesToSkip: Map<string, boolean> = new Map();
+  constructor(
+    public readonly blackCard: BlackCard,
+    public readonly cardCzar: GameUser,
+  ) {
+    this.id = crypto.randomUUID();
+  }
+  get plays() {
+    return Object.fromEntries(this._plays.entries());
+  }
+
+  get votesToSkip() {
+    return Object.fromEntries(this._votesToSkip.entries());
+  }
+
+  playWhiteCards(userId: string, whiteCards: WhiteCard[]) {
+    const user: GameUser | undefined = socketManager.gameUsers.get(userId);
+    if (!user) {
+      throw new Error("User not found");
     }
-    get plays() {
-        return Object.fromEntries(this._plays.entries());
+    if (user.id === this.cardCzar.id) {
+      throw new Error("Card czar cannot play");
+    }
+    if (this.status !== RoundStatus.WAITING_FOR_PLAYERS) {
+      throw new Error("Cannot play in this phase");
     }
 
-    get votesToSkip() {
-        return Object.fromEntries(this._votesToSkip.entries());
+    if (this._plays.has(userId)) {
+      throw new Error("User already played");
     }
 
-    playWhiteCards(userId: string, whiteCards: WhiteCard[]) {
+    const cards = whiteCards.map((playedCard) => {
+      if (!user.hand.has(playedCard.id)) {
+        throw new Error("User does not have this card");
+      }
+      const card = user.hand.get(playedCard.id);
+      if (card.isCustom) {
+        card.text = playedCard.text;
+      }
+      return card;
+    });
 
-        const user: GameUser | undefined = socketManager.gameUsers.get(userId);
-        if (!user) {
-            throw new Error("User not found");
-        }
-        if (user.id === this.cardCzar.id) {
-            throw new Error("Card czar cannot play");
-        }
-        if (this.status !== RoundStatus.WAITING_FOR_PLAYERS) {
-            throw new Error("Cannot play in this phase");
-        }
-
-        if (this._plays.has(userId)) {
-            throw new Error("User already played");
-        }
-
-        const cards = whiteCards.map(playedCard => {
-            if (!user.hand.has(playedCard.id)) {
-                throw new Error("User does not have this card");
-            }
-            const card = user.hand.get(playedCard.id);
-            if (card.isCustom) {
-                card.text = playedCard.text;
-            }
-            return card;
-        });
-
-        this._plays.set(userId, cards);
-        user.removeWhiteCardsFromHand(cards);
+    this._plays.set(userId, cards);
+    user.removeWhiteCardsFromHand(cards);
+    if (this._plays.size === socketManager.activeUsers.length - 1) {
+      setTimeout(() => {
         if (this._plays.size === socketManager.activeUsers.length - 1) {
-            setTimeout(() => {
-                if (this._plays.size === socketManager.activeUsers.length - 1) {
-                    this.status = RoundStatus.SELECTING_WINNER;
-                    game.emitJSON();
-                }
-            }, 5_000);
-            // selecting winner time
+          this.status = RoundStatus.SELECTING_WINNER;
+          game.emitJSON();
         }
-        game.emitJSON();
+      }, 5_000);
+      // selecting winner time
+    }
+    game.emitJSON();
+  }
+
+  undoPlay(userId: string) {
+    const user: GameUser | undefined = socketManager.gameUsers.get(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    if (user.id === this.cardCzar.id) {
+      throw new Error("Card czar cannot play");
+    }
+    if (this.status !== RoundStatus.WAITING_FOR_PLAYERS) {
+      throw new Error("Cannot undo play in this phase");
+    }
+    this.returnPlayersWhiteCards(userId);
+    game.emitJSON();
+  }
+  returnPlayersWhiteCards(userId: string) {
+    const user = socketManager.gameUsers.get(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    const whiteCards = this.plays[userId];
+    if (!whiteCards) {
+      return;
+    }
+    this._plays.delete(userId);
+    whiteCards.forEach((w) => {
+      if (w.isCustom) {
+        w.text = "";
+      }
+    });
+    user.addCardsToHand(whiteCards);
+  }
+
+  selectWinner(cardId: string) {
+    const userId = Array.from(this._plays.values()).find((cards) => {
+      return cards.some((c) => c.id === cardId);
+    })[0]?.id;
+
+    if (this.status !== RoundStatus.SELECTING_WINNER) {
+      throw new Error("Not in selecting winner phase");
     }
 
+    const user = socketManager.gameUsers.get(userId);
 
-    undoPlay(userId: string) {
-        const user: GameUser | undefined = socketManager.gameUsers.get(userId);
-        if (!user) {
-            throw new Error("User not found");
-        }
-        if (user.id === this.cardCzar.id) {
-            throw new Error("Card czar cannot play");
-        }
-        if (this.status !== RoundStatus.WAITING_FOR_PLAYERS) {
-            throw new Error("Cannot undo play in this phase");
-        }
-        this.returnPlayersWhiteCards(userId);
-        game.emitJSON();
-    }
-    returnPlayersWhiteCards(userId: string) {
-        const user = socketManager.gameUsers.get(userId);
-        if (!user) {
-            throw new Error("User not found");
-        }
-        const whiteCards = this.plays[userId];
-        if (!whiteCards) {
-            return;
-        }
-        this._plays.delete(userId);
-        whiteCards.forEach(w => {
-            if (w.isCustom) {
-                w.text = "";
-            }
-        });
-        user.addCardsToHand(whiteCards);
+    if (!user?.isActive) {
+      throw new Error("User not found");
     }
 
-    selectWinner(cardId: string) {
+    const winnerPoints = game.getPoints(userId) + 1;
 
-        const userId = Array.from(this._plays.entries()).find(([userId, cards]) => {
-            return cards.some(c => c.id === cardId);
-        })[0];
+    game._points.set(userId, winnerPoints);
+    console.log(`User ${userId} has ${winnerPoints} points`);
 
+    this.winnerId = userId;
+    this.status = RoundStatus.SHOWING_WINNER;
+    game.emitJSON();
 
+    setTimeout(() => {
+      if (!game.started) return;
+      const highScore = Math.max(...Array.from(game._points.values()));
 
-        if (this.status !== RoundStatus.SELECTING_WINNER) {
-            throw new Error("Not in selecting winner phase");
-        }
+      if (highScore >= game.rules.pointsToWin) {
+        game.endGame();
+        return; // <-- important: prevent going to nextRound
+      }
 
-        const user = socketManager.gameUsers.get(userId);
+      game.nextRound();
+    }, 8_000);
+  }
 
-        if (!user?.isActive) {
-            throw new Error("User not found");
-        }
+  get cardCzarId() {
+    return this.cardCzar.id;
+  }
 
+  toJSON(): TGameGround {
+    const { id, blackCard, cardCzarId, status, winnerId, votesToSkip } = this;
+    return {
+      id,
+      blackCard,
+      cardCzarId,
+      status,
+      winnerId,
+      votesToSkip,
+      plays: this.getJSONPlays(),
+    };
+  }
 
-        const winnerPoints = game.getPoints(userId) + 1;
-
-
-        game._points.set(userId, winnerPoints);
-        console.log(`User ${userId} has ${winnerPoints} points`);
-
-        this.winnerId = userId;
-        this.status = RoundStatus.SHOWING_WINNER;
-        game.emitJSON();
-
-        setTimeout(() => {
-            if (!game.started) return;
-            const highScore = Math.max(...Array.from(game._points.values()));   
-        
-            if (highScore >= game.rules.pointsToWin) {
-                game.endGame();
-                return;  // <-- important: prevent going to nextRound
-            }
-        
-            game.nextRound();
-        }, 8_000);
-
-
-
-
-
-
+  /**
+   * @returns Plays that are censored if the game is in WAITING_FOR_PLAYERS state, or real ones
+   */
+  private getJSONPlays(): Record<string, WhiteCard[]> {
+    if (this.status === RoundStatus.WAITING_FOR_PLAYERS) {
+      return Object.fromEntries(
+        Object.keys(this.plays).map((userId) => [userId, []]),
+      );
     }
+    return this.plays;
+  }
 
-    get cardCzarId() {
-        return this.cardCzar.id;
+  voteToSkip(userId: string, vote: boolean) {
+    if (this.status !== RoundStatus.WAITING_FOR_PLAYERS) {
+      throw new Error("Cannot vote to skip in this phase");
     }
+    this._votesToSkip.set(userId, vote);
 
-    toJSON(): TGameGround {
-        const { id, blackCard, cardCzarId, status, winnerId, votesToSkip } = this;
-        return {
-            id,
-            blackCard,
-            cardCzarId,
-            status,
-            winnerId,
-            votesToSkip,
-            plays: this.getJSONPlays(),
-        }
+    const votes = [...this._votesToSkip.values()];
+    const yesVotes = votes.filter((v) => v).length;
+    const percentYes = yesVotes / (socketManager.activeUsers.length - 1);
+
+    console.log("vote recorded", percentYes);
+    game.emitJSON();
+    if (percentYes > 0.5) {
+      game.skipBlackCard();
+      console.log("skipping black card");
     }
-
-    /**
-     * @returns Plays that are censored if the game is in WAITING_FOR_PLAYERS state, or real ones
-     */
-    private getJSONPlays(): Record<string, WhiteCard[]> {
-        if (this.status === RoundStatus.WAITING_FOR_PLAYERS) {
-            return Object.fromEntries(Object.keys(this.plays).map(userId => [userId, []]))
-        }
-        return this.plays;
-    }
-
-    voteToSkip(userId: string, vote: boolean) {
-        if (this.status !== RoundStatus.WAITING_FOR_PLAYERS) {
-            throw new Error("Cannot vote to skip in this phase");
-        }
-        this._votesToSkip.set(userId, vote);
-
-        const votes = [...this._votesToSkip.values()];
-        const yesVotes = votes.filter(v => v).length;
-        const percentYes = (yesVotes / (socketManager.activeUsers.length - 1));
-
-        console.log("vote recorded", percentYes);
-        game.emitJSON();
-        if (percentYes > 0.5) {
-            game.skipBlackCard();
-            console.log("skipping black card");
-        }
-    }
-
+  }
 }
