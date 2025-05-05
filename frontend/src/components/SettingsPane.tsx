@@ -1,4 +1,4 @@
-import { Button, Checkbox, Input, ScrollArea, Select, SimpleGrid, Table, Tabs, Text, Title } from "@mantine/core";
+import { Button, Checkbox, Input, NativeSelect, ScrollArea, SimpleGrid, Table, Tabs, Text, Title } from "@mantine/core";
 import { useAuth, useGame } from "../hooks";
 import { useEffect, useMemo, useState } from "react";
 import { IconPlus, IconSearch, IconX } from "@tabler/icons-react";
@@ -55,31 +55,30 @@ const GeneralSettings = () => {
                     label="Cands With Multiple Aswers" checked={rules.allowMultipleAnswerBlackCards} onChange={(e) => setRule("allowMultipleAnswerBlackCards", e.currentTarget.checked)} />
             </SimpleGrid>
             <SimpleGrid cols={2} mt="md">
-                <Select label="Score Limit" placeholder="Select Score Limit"
-                    type="number"
+                <NativeSelect label="Score Limit"
                     disabled={gameStarted}
                     value={rules.pointsToWin.toString()}
                     onChange={(value) => {
-                        setRule("pointsToWin", value ? parseInt(value) : 1)
+                        setRule("pointsToWin", value ? parseInt(value.currentTarget.value) : 1)
                     }}
                     data={Array.from({ length: 67 }, (_, i) => i + 3).map((i) => ({
                         value: i.toString(),
                         label: i.toString()
                     }))}
                 />
-                <Select label="Player Limit" placeholder="Select Player Limit"
+                <NativeSelect label="Player Limit"
                     value={rules.maxNumberOfPlayers.toString()}
                     disabled={gameStarted}
-                    onChange={(value) => setRule("maxNumberOfPlayers", parseInt(value ?? "1"))}
+                    onChange={({currentTarget}) => setRule("maxNumberOfPlayers", parseInt(currentTarget.value ?? "3"))}
                     data={Array.from({ length: 18 }, (_, i) => i + 3).map((i) => ({
                         value: i.toString(),
                         label: i.toString()
                     }))}
                 />
-                <Select label="Number of Custom Cards" placeholder="Select Number of Custom Cards"
+                <NativeSelect label="Number of Custom Cards" 
                     value={rules.numberOfCustomCards.toString()}
                     disabled={gameStarted}
-                    onChange={(value) => setRule("numberOfCustomCards", parseInt(value ?? "1"))}
+                    onChange={({currentTarget}) => setRule("numberOfCustomCards", parseInt(currentTarget.value ?? "1"))}
                     data={Array.from({ length: 61 }, (_, i) => i).map((i) => ({
                         value: i.toString(),
                         label: i.toString()
@@ -238,86 +237,96 @@ const PlayerSettings = () => {
 }
 
 const ImportDeckSettings = () => {
-    const {importDeck, addedDeck, addDeckError} = useGame();
-    const [deckId, setDeckId] = useState<string>("");
-    const [addingDeck, setAddingDeck] = useState<boolean>(false);
-    
-    const addDeck = () => {
-        importDeck(deckId);
-        setAddingDeck(true);
-    }
-
+    const { importDeck, addedDeck, addDeckError } = useGame();
+    const [deckId, setDeckId] = useState('');
+    const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  
+    const handleAddDeck = async () => {
+      setStatus('loading');
+      importDeck(deckId);
+    };
+  
     useEffect(() => {
-
-        if (addedDeck && addingDeck) {
-            setAddingDeck(false);
-            setDeckId("");
-        }
-        if(addDeckError && addingDeck) {
-            setAddingDeck(false);
-        }
-
-    }, [addedDeck, addDeckError]);
-
+      if (addDeckError && status === 'loading') {
+        setStatus('error');
+      } else if (addedDeck && status === 'loading') {
+        setStatus('success');
+        setDeckId('');
+      }
+    }, [addedDeck, addDeckError, status]);
+  
     return (
-        <>
-            {addDeckError && (
-                <Text c="red">
-                    Error: {addDeckError}
-                </Text>
-            )}
-            <Text>Import a deck from <a href="https://cast.clrtd.com/" target="_blank">cast.clrtd.com</a></Text>
-            <SimpleGrid cols={2}>
-                <Input placeholder="Deck ID" value={deckId} onChange={(e) => setDeckId(e.currentTarget.value)} />
-                <Button onClick={addDeck}>Import Deck</Button>
-            </SimpleGrid>
-            {addingDeck && (
-                <Text>Importing deck...</Text>
-            )}
-            {addedDeck && (
-                <>
-                <Title order={3} mt="xl">Deck Imported/Updated</Title>
-               <Table mt="xl">
-                <Table.Tbody>
-                    <Table.Tr>
-                        <Table.Th pl="sm">
-                            <Text>Deck Name</Text>
-                        </Table.Th>
-                        <Table.Td pr="xl">
-                            <Text>{addedDeck.name}</Text>
-                        </Table.Td>
-                    </Table.Tr>
-                    <Table.Tr>
-                        <Table.Th pl="sm">
-                            <Text>Deck Description</Text>
-                        </Table.Th>
-                        <Table.Td pr="xl">
-                            <Text>{addedDeck.description}</Text>
-                        </Table.Td>
-                    </Table.Tr>
-                    <Table.Tr>
-                        <Table.Th pl="sm">
-                            <Text>Number of Black Cards</Text>
-                        </Table.Th>
-                        <Table.Td pr="xl">
-                            <Text>{addedDeck.numberOfBlackCards}</Text>
-                        </Table.Td>
-                    </Table.Tr>
-                    <Table.Tr>
-                        <Table.Th pl="sm">
-                            <Text>Number of White Cards</Text>
-                        </Table.Th>
-                        <Table.Td pr="xl">
-                            <Text>{addedDeck.numberOfWhiteCards}</Text>
-                        </Table.Td>
-                    </Table.Tr>
-                </Table.Tbody>
-               </Table>
-               </>
-            )}
-        </>
-    )
-}
+      <>
+        {status === 'error' && addDeckError && (
+          <Text c="red">Error: {addDeckError}</Text>
+        )}
+  
+        <Text>
+          Import a deck from{' '}
+          <a href="https://cast.clrtd.com/" target="_blank" rel="noopener noreferrer">
+            cast.clrtd.com
+          </a>
+        </Text>
+  
+        <SimpleGrid cols={2} mt="md">
+          <Input
+            placeholder="Deck ID"
+            value={deckId}
+            onChange={(e) => setDeckId(e.currentTarget.value)}
+          />
+          <Button c="white" onClick={handleAddDeck} disabled={!deckId || status === 'loading'}>
+            Import Deck
+          </Button>
+        </SimpleGrid>
+  
+        {status === 'loading' && <Text>Importing deck...</Text>}
+  
+        {status === 'success' && addedDeck && (
+          <>
+            <Title order={3} mt="xl">
+              Deck Imported/Updated
+            </Title>
+            <Table mt="xl">
+              <Table.Tbody>
+                <Table.Tr>
+                  <Table.Th pl="sm">
+                    <Text>Deck Name</Text>
+                  </Table.Th>
+                  <Table.Td pr="xl">
+                    <Text>{addedDeck.name}</Text>
+                  </Table.Td>
+                </Table.Tr>
+                <Table.Tr>
+                  <Table.Th pl="sm">
+                    <Text>Deck Description</Text>
+                  </Table.Th>
+                  <Table.Td pr="xl">
+                    <Text>{addedDeck.description}</Text>
+                  </Table.Td>
+                </Table.Tr>
+                <Table.Tr>
+                  <Table.Th pl="sm">
+                    <Text>Number of Black Cards</Text>
+                  </Table.Th>
+                  <Table.Td pr="xl">
+                    <Text>{addedDeck.numberOfBlackCards}</Text>
+                  </Table.Td>
+                </Table.Tr>
+                <Table.Tr>
+                  <Table.Th pl="sm">
+                    <Text>Number of White Cards</Text>
+                  </Table.Th>
+                  <Table.Td pr="xl">
+                    <Text>{addedDeck.numberOfWhiteCards}</Text>
+                  </Table.Td>
+                </Table.Tr>
+              </Table.Tbody>
+            </Table>
+          </>
+        )}
+      </>
+    );
+  };
 
 
 export default SettingsPane;
