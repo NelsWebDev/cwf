@@ -22,8 +22,14 @@ export const GamePlayEventHandlers: Pick<
   onPickWinner: function (socket, winnerId): void {
     socket.data.selectWinner(winnerId);
   },
-  onStartGame: function (): void {
-    game.start();
+  onStartGame: function (socket): void {
+    game.start().catch((err) => {
+      console.error("Error starting game", err);
+      socket.emit("serverMessage", {
+        title: "Failed to start game",
+        message: err?.message,
+      });
+    });
   },
   onEndGame: function (): void {
     game.endGame();
