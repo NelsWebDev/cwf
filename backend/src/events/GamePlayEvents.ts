@@ -48,10 +48,6 @@ export const GamePlayEventHandlers: Pick<
     },
     onVoteToSkipBlackCard: function (socket): void {
         game.currentRound?.voteToSkip(socket.data.id, true);
+        game.skipBlackCard();
     }
-    game.skipBlackCard();
-  },
-  onVoteToSkipBlackCard: function (socket): void {
-    game.currentRound?.voteToSkip(socket.data.id, true);
-  },
 };
