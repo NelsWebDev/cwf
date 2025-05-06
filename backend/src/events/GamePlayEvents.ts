@@ -40,10 +40,14 @@ export const GamePlayEventHandlers: Pick<
   onMyHand: function (socket): void {
     socket.data.emitMyHand();
   },
-
-  onSkipBlackCard: function (socket): void {
-    if (game.currentCardCzar.id !== socket.data.id) {
-      throw new Error("You are not the card czar");
+    onSkipBlackCard: function (socket): void {
+        if(game.currentCardCzar.id !== socket.data.id) {
+            throw new Error("You are not the card czar");
+        }
+        game.skipBlackCard();
+    },
+    onVoteToSkipBlackCard: function (socket): void {
+        game.currentRound?.voteToSkip(socket.data.id, true);
     }
     game.skipBlackCard();
   },
