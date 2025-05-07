@@ -121,6 +121,7 @@ type ServerEmittedEvents = {
     "gameEnded": User['username'];
     "closeModal": void;
     "holdGame": void;
+    "winnerSelected": User['id'];
 }
 export type ServerMessage = {
     title?: string;

@@ -1,5 +1,5 @@
 import { GameUser } from "./session/GameUser";
-import { game, socketManager } from "./singletons";
+import { game, ioServer, socketManager } from "./singletons";
 import {
   BlackCard,
   GameRound as TGameGround,
@@ -125,7 +125,7 @@ export class GameRound implements TGameGround {
 
     this.winnerId = userId;
     this.status = RoundStatus.SHOWING_WINNER;
-    game.emitJSON();
+    ioServer.emit("winnerSelected", this.winnerId);
 
     setTimeout(() => {
       if (!game.started) return;

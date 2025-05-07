@@ -85,6 +85,27 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
             showModal({ title: "Game on hold", element: <NotEnoughPlayers endGame={endGame}/>, canClose: false });
         });
 
+        socket.on("winnerSelected", (czarId) => {
+            setCurrentRound((prev) => {
+                return {
+                    ...prev as GameRound,
+                    winnerId: czarId,
+                    status: RoundStatus.SHOWING_WINNER,
+                }
+            });
+            setPlayers((prev) => {  
+                return prev.map((player) => {
+                    if (player.id === czarId) {
+                        return {
+                            ...player,
+                            points: player.points + 1,
+                        }
+                    }
+                    return player;
+                });
+            });
+        });
+
         return () => {
             socket.off('players');
             socket.off('rules');
@@ -95,6 +116,7 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
             socket.off("rules");
             socket.off("myHand");
             socket.off("givenCards");
+            socket.off("winnerSelected");
         }
 
 
