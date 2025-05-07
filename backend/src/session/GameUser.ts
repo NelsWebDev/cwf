@@ -111,11 +111,11 @@ export class GameUser {
     return game._currentRound?.undoPlay(this.id);
   }
 
-  selectWinner(winnerId: string) {
+  selectWinner(winningCardId: string) {
     if (game.currentRound.cardCzar.id !== this.id) {
       throw new Error("You are not the card czar");
     }
-    return game.currentRound?.selectWinner(winnerId);
+    return game.currentRound?.selectWinner(winningCardId);
   }
 
   get room() {

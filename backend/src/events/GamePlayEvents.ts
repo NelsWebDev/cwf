@@ -19,8 +19,8 @@ export const GamePlayEventHandlers: Pick<
   onUndoPlay: function (socket): void {
     socket.data.undoPlay();
   },
-  onPickWinner: function (socket, winnerId): void {
-    socket.data.selectWinner(winnerId);
+  onPickWinner: function (socket, winningCardId): void {
+    socket.data.selectWinner(winningCardId);
   },
   onStartGame: function (socket): void {
     game.start().catch((err) => {

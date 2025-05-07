@@ -101,9 +101,12 @@ export class GameRound implements TGameGround {
   }
 
   selectWinner(cardId: string) {
-    const userId = Array.from(this._plays.values()).find((cards) => {
-      return cards.some((c) => c.id === cardId);
-    })[0]?.id;
+    const userId = Array.from(this._plays.entries()).find(
+      ([, cards]) => cards.some((card) => card.id === cardId),
+    )?.[0];
+    if (!userId) {
+      throw new Error("Card not found");
+    }
 
     if (this.status !== RoundStatus.SELECTING_WINNER) {
       throw new Error("Not in selecting winner phase");

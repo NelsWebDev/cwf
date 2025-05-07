@@ -202,6 +202,10 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
         });
     }, [])
 
+    const pickWinner = (cardId: string) => {
+        socket.emit("pickWinner", cardId);
+    }
+
     const value: GameService = {
         players,
         currentBlackCard,
@@ -228,7 +232,7 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
         kickPlayer: socket.emit.bind(socket, "kickPlayer"),
         playCards,
         undoPlay,
-        pickWinner: (userId: string) => socket.emit("pickWinner", userId),
+        pickWinner,
         setRules: (rules: Partial<Rules>) => socket.emit("updateRules", rules),
         skipBlackCard: () => socket.emit("skipBlackCard"),
         voteToSkipBlackCard: () => socket.emit("voteToSkipBlackCard", true),
