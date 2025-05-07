@@ -28,7 +28,7 @@ export class CardManager {
     return decks.map(CardManager.deckFromPrismaQuery);
   }
 
-  private static deckFromPrismaQuery(deck: PopulatedDeck): CardDeck {
+  public static deckFromPrismaQuery(deck: PopulatedDeck): CardDeck {
     const {
       _count: { blackCards, whiteCards },
       description,

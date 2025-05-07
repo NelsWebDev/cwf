@@ -24,8 +24,5 @@ ioServer.on("connection", (socket) => {
   socketManager.onSocketConnection(socket);
 });
 
-// static public
-
-console.log(path.join(__dirname, "public"));
 
 express.use(Express.static(path.join(__dirname, "public")));

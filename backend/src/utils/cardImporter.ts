@@ -1,7 +1,10 @@
-import { CardManager } from "../CardManager";
 import { prismaClient } from "../singletons";
+import { CardManager } from "../CardManager";
+import { Prisma } from "@prisma/client";
 
-interface OriginalDeck {
+
+type OriginalDeckFormat = {
+  error: number;
   name: string;
   description: string;
   watermark: string;
@@ -9,124 +12,90 @@ interface OriginalDeck {
   responses: { text: string[] }[];
 }
 
-interface PrismaDeck {
-  name: string;
-  description: string;
-  importedDeckId?: string | null;
-  blackCards: {
-    create: {
-      text: string;
-      pick: number;
-    }[];
-  };
-  whiteCards: {
-    create: {
-      text: string;
-    }[];
-  };
+export const parseDeckToPrismaCreate = (deck: OriginalDeckFormat) : Prisma.DeckCreateInput => {
+  const blackCards = deck.calls.map((call) => {
+    let formattedString = "";
+    const numberOfBlanks = call.text.length - 1;
+  
+    const lastIndex = call.text.length - 1;
+    const text = call.text.map((part, index) => {
+      if(part.trim() === "" && index !== lastIndex) {
+        formattedString += " _________ ";
+        return;
+      }
+      formattedString += part;
+      if(index !== lastIndex) {
+        formattedString += " _________ ";
+      }  
+    });
+
+    return {text: formattedString, pick: numberOfBlanks};
+  });
+  return {
+    name: deck.name,
+    description: deck.description,
+    importedDeckId: deck.watermark,
+    blackCards: {create: blackCards},
+    whiteCards: {create: deck.responses.map((response) => ({
+      text: response.text[0],
+    }))},
+  }
 }
 
-async function fetchAndTransformDeck(
-  deckCode: string,
-): Promise<PrismaDeck & { id: string | undefined }> {
-  deckCode = deckCode.trim();
+export const importDeck = async (deckCode: string) => {
+ 
+  const deckCodeREGEX = /[A-Z0-9]{5}/
 
-  const id = await CardManager.fetchDeck({ importedDeckId: deckCode }).then(
-    (r) => r?.id || undefined,
-  );
+  let code = deckCode.trim();
+  if(code.length === 5) {
+    if(!deckCodeREGEX.test(code)) {
+      throw new Error("Invalid deck code");
+    }
+  } 
+  else {
+    const match = code.match(deckCodeREGEX);
+    if(!match) {
+      throw new Error("Invalid deck code");
+    }
+    code = match[0].trim();
+    console.log("Deck code found in URL: ", code);
+  }
 
-  const url = `https://api.crcast.cc/v1/cc/decks/${deckCode}/all`;
+
+
+  const url = `https://api.crcast.cc/v1/cc/decks/${code}/all`;
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch deck: ${response.statusText}`);
   }
-
-  const json: OriginalDeck = await response.json();
-
-  console.log(json);
-  if (
-    !json.name ||
-    !("description" in json) ||
-    !Array.isArray(json.calls) ||
-    !Array.isArray(json.responses)
-  ) {
+  const json: OriginalDeckFormat = await response.json();
+  if (! (json.name && "description" in json && Array.isArray(json.calls) && Array.isArray(json.responses))) {
     throw new Error("Invalid deck format from URL");
   }
+  const deck = parseDeckToPrismaCreate(json);
 
-  let skippedBlackCards = 0;
+  const existingDeck = await prismaClient.deck.findFirst({
+    where: {
+      importedDeckId: deck.importedDeckId,
+    },
+  });
 
-  const blackCards = json.calls
-    .map((call) => {
-      const textSegments: string[] = [];
-
-      call.text.forEach((part) => {
-        if (part.trim() === "") {
-          // only add blank if the last segment was not a blank
-          if (
-            textSegments.length === 0 ||
-            textSegments[textSegments.length - 1] !== "_____"
-          ) {
-            textSegments.push("_____");
-          }
-        } else {
-          textSegments.push(part);
-        }
+  const newDeck = await prismaClient.$transaction(async (tx) => {
+    if (existingDeck) {
+      await tx.deck.delete({
+        where: { id: existingDeck.id },
       });
-
-      // skip if all blanks (example: ["", "", ""] → ["_____"])
-      if (textSegments.every((seg) => seg === "_____")) {
-        skippedBlackCards++;
-        return null;
-      }
-
-      const text = textSegments.join(" ");
-      const pick = call.text.filter((part) => part.trim() === "").length ?? 1;
-
-      return { text, pick };
-    })
-    .filter((card): card is { text: string; pick: number } => card !== null);
-
-  const whiteCards = json.responses.map((response) => ({
-    text: response.text[0],
-  }));
-
-  console.log(`✅ Processed deck: "${json.name}"`);
-  console.log(`✅ Imported black cards: ${blackCards.length}`);
-  console.log(`✅ Imported white cards: ${whiteCards.length}`);
-  console.log(`⚠️ Skipped black cards (only blanks): ${skippedBlackCards}`);
-
-  return {
-    name: json.name,
-    description: json.description,
-    blackCards: { create: blackCards },
-    whiteCards: { create: whiteCards },
-    importedDeckId: deckCode,
-    id,
-  };
-}
-
-export async function importDeck(deckCode: string) {
-  try {
-    const data = await fetchAndTransformDeck(deckCode);
-
-    if (data.id) {
-      await prismaClient.deck
-        .delete({
-          where: { id: data.id },
-        })
-        .then(() => {
-          console.log("⚠️ Deleted existing deck with the same ID");
-        });
     }
 
-    const createdDeck = await prismaClient.deck
-      .create({ data })
-      .then((r) => r.id);
-    const deck = CardManager.fetchDeck({ id: createdDeck });
-    console.log("🎉 Deck imported successfully into database!");
-    return deck;
-  } catch (error) {
-    console.error("❌ Error importing deck:", error);
-    throw error;
-  }
-}
+    const newDeck  = await tx.deck.create({
+      data: deck,
+      include: {_count: {select: {blackCards: true, whiteCards: true}}},
+    });
+
+    return CardManager.deckFromPrismaQuery(newDeck);
+  });
+
+  return newDeck;
+
+
+};
