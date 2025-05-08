@@ -136,8 +136,7 @@ export class Game {
   shuffleBlackCards() {
     const cardsToReset = this._blackCards.filter(
       (card) =>
-        card.state === CardState.AVAILABLE ||
-        card.state === CardState.PLAYED_PREVIOUSLY,
+        card.state !== CardState.IN_USE
     );
     cardsToReset.forEach((card) => (card.state = CardState.AVAILABLE));
     this._blackCards = this._blackCards.sort(() => Math.random() - 0.5);
@@ -252,6 +251,10 @@ export class Game {
     const card = this._blackCards.find(
       (card) => card.state === CardState.AVAILABLE,
     );
+    if(!card) {
+      this.shuffleBlackCards();
+      return this.drawBlackCard();
+    }
     card.state = CardState.IN_USE;
     return card;
   }

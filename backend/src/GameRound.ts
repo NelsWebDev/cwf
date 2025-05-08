@@ -5,6 +5,7 @@ import {
   GameRound as TGameGround,
   WhiteCard,
   RoundStatus,
+  CardState,
 } from "./types";
 
 export class GameRound implements TGameGround {
@@ -126,6 +127,7 @@ export class GameRound implements TGameGround {
     this.winnerId = userId;
     this.status = RoundStatus.SHOWING_WINNER;
     ioServer.emit("winnerSelected", this.winnerId);
+    this.blackCard.state = CardState.PLAYED_PREVIOUSLY;
 
     setTimeout(() => {
       if (!game.started) return;
