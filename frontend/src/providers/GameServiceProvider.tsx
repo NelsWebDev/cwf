@@ -3,6 +3,7 @@ import { CardDeck, DEFAULT_RULES, GameRound, GameService, RoundStatus, Rules, Us
 import { useAuth, useModal } from "../hooks";
 import { Button, Input, Stack, Text } from "@mantine/core";
 import { GameServiceContext } from "./Contexts";
+import { isURL } from "../utils";
 
 
 
@@ -29,13 +30,20 @@ const CustomCardModal = ({ setSelectedWhiteCard, setPlayedCards, selectedWhiteCa
     const [text, setText] = useState<string>("");
     const { closeModal } = useModal();
 
+
+
     const handleSubmit = () => {
-        if (!text.trim()) {
+        let txt = text.trim();
+        if (!txt) {
             setSelectedWhiteCard(undefined);
             closeModal();
             return;
         }
-        selectedWhiteCard.text = text;
+
+        if(isURL(txt)) {
+            txt = '[img]' + txt + '[/img]';
+        }
+        selectedWhiteCard.text = txt;
         setPlayedCards((prev) => [...prev, selectedWhiteCard]);
         setSelectedWhiteCard(undefined);
         closeModal();
