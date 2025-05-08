@@ -1,6 +1,18 @@
 import {  Card, Center, Group, Text, Title } from "@mantine/core"
 import { IconThumbDownFilled, IconX } from "@tabler/icons-react";
 import { useAuth, useGame } from "../hooks";
+import { Fragment } from "react/jsx-runtime";
+
+const TextWithLineBreaks = ({ text }: {text?: string}) => (
+    <>
+      {text?.split('\n').map((line, index) => (
+        <Fragment key={index}>
+          {line}
+          {index !== text.split('\n').length - 1 && <br />}
+        </Fragment>
+      ))}
+    </>
+  );
 
 const BlackCard = () => {
     const { user } = useAuth();
@@ -39,7 +51,7 @@ const BlackCard = () => {
                     lineHeight: '1.8rem',
                 }}
             >
-                {text}
+                <TextWithLineBreaks text={text} />
             </Text>
             </Center>
         </Card>

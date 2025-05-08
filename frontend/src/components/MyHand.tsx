@@ -5,10 +5,14 @@ import { useEffect, useState } from "react";
 import { RoundStatus } from "../types";
 
 const MyHand = () => {
-  const { myHand, currentRound, gameStarted, selectedWhiteCard } = useGame();
+  const { myHand, currentRound, gameStarted, selectedWhiteCard,  playedCards } = useGame();
   const { user } = useAuth();
   const isCardCzar = currentRound?.cardCzarId === user?.id;
   const [opened, setOpened] = useState(!isCardCzar);
+  const playedCardIds = playedCards.map((card) => card.id);
+
+  const filteredHand = myHand.filter((card) => !playedCardIds.includes(card.id));
+
 
   useEffect(() => {
     setOpened(!isCardCzar);
@@ -37,7 +41,7 @@ const MyHand = () => {
           <Accordion.Panel>
             <Box id="hand-container" style={{ position: 'relative' }}>
               <Box className="hand" style={{ display: 'inline-block' }}>
-                {myHand.map((card) => (
+                {filteredHand.map((card) => (
                   <WhiteCard
                     key={card.id}
                     data={card}

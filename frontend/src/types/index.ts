@@ -29,6 +29,7 @@ export type GameService = {
     allDecks: CardDeck[];
     addDeckError?: string|undefined;
     isCardCzar: boolean;
+    playedCards: WhiteCard[];
     importDeck: (deckId: string) => void;
     setSelectedWhiteCard: (card: WhiteCard|undefined) => void;
     addDeck: (deckId: string) => void;
@@ -36,14 +37,13 @@ export type GameService = {
     startGame: () => void;
     endGame: () => void;
     kickPlayer: (userId: string) => void;
-    playCards: (cards: WhiteCard[]) => void;
     undoPlay: () => void;
     pickWinner: (winngCardId: string) => void;
     setRules: (rules: Partial<Rules>) => void;
     setRule: <K extends keyof Rules>(key: K, value: Rules[K]) => void;
     skipBlackCard: () => void;
     voteToSkipBlackCard: (vote: boolean) => void;
-
+    playSelectedCard: () => void;
 }
 
 export type ModalService = {

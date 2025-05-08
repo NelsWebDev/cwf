@@ -1,21 +1,58 @@
-import { ReactElement, useEffect, useMemo, useState } from "react";
+import { Dispatch, ReactElement, SetStateAction, useEffect, useMemo, useState } from "react";
 import { CardDeck, DEFAULT_RULES, GameRound, GameService, RoundStatus, Rules, User, WhiteCard } from "../types";
 import { useAuth, useModal } from "../hooks";
-import { Button, Text } from "@mantine/core";
+import { Button, Input, Stack, Text } from "@mantine/core";
 import { GameServiceContext } from "./Contexts";
 
 
 
-const NotEnoughPlayers = ({endGame}: {endGame: () => void}) => {
+const NotEnoughPlayers = ({ endGame }: { endGame: () => void }) => {
     return (
         <>
-            <Text style={{lineHeight: "1rem"}}>There are now less than three players. Please wait til someone joins, or press "End Game"</Text>
+            <Text 
+            style={{ lineHeight: "1rem" }}>There are now less than three players. Please wait til someone joins, or press "End Game"</Text>
             <Button onClick={endGame} mt="lg">
                 End Game
             </Button>
         </>
     )
 }
+
+type CustomCardModalProps = {
+    setSelectedWhiteCard: (whiteCard: WhiteCard | undefined) => void;
+    setPlayedCards: Dispatch<SetStateAction<WhiteCard[]>>;
+    selectedWhiteCard: WhiteCard;
+}
+
+const CustomCardModal = ({ setSelectedWhiteCard, setPlayedCards, selectedWhiteCard }: CustomCardModalProps) => {
+
+    const [text, setText] = useState<string>("");
+    const { closeModal } = useModal();
+
+    const handleSubmit = () => {
+        if (!text.trim()) {
+            setSelectedWhiteCard(undefined);
+            closeModal();
+            return;
+        }
+        selectedWhiteCard.text = text;
+        setPlayedCards((prev) => [...prev, selectedWhiteCard]);
+        setSelectedWhiteCard(undefined);
+        closeModal();
+    }
+
+    return (
+        <Stack>
+            <Input id="custom-card-input" error={!text.trim()} placeholder="Custom card text...." type="text" onKeyDown={e => {
+                if (e.key === "Enter") {
+                    handleSubmit();
+                }
+            }} value={text} onChange={(e) => setText(e.currentTarget.value)} autoFocus={true} />
+            <Button c="white" disabled={!text.trim()} onClick={handleSubmit}>Play</Button>
+        </Stack>
+    )
+}
+
 
 const GameServiceProvider = ({ children }: { children: ReactElement }) => {
 
@@ -36,6 +73,46 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
     const gameStarted = useMemo(() => !!currentRound, [currentRound]);
     const currentBlackCard = useMemo(() => currentRound?.blackCard, [currentRound]);
 
+    const playSelectedCard = () => {
+        if (!selectedWhiteCard) {
+            showModal({ title: "No card selected", message: "Please select a card to play", autoclose: 3_000 });
+            return;
+        }
+
+        if (currentRound?.status !== RoundStatus.WAITING_FOR_PLAYERS) {
+            showModal({ title: "Game not in play", message: "You can't play a card right now", autoclose: 3_000 });
+            return;
+        }
+
+        if (currentRound?.cardCzarId === user?.id) {
+            showModal({ title: "Card czar can't play", message: "You can't play a card as the card czar", autoclose: 3_000 });
+            return;
+        }
+
+        if (selectedWhiteCard.isCustom) {
+            showModal({
+                title: "Custom card",
+                message: "",
+                element: <CustomCardModal
+                    selectedWhiteCard={selectedWhiteCard}
+                    setPlayedCards={setPlayedCards}
+                    setSelectedWhiteCard={setSelectedWhiteCard}
+                />,
+                canClose: true,
+            });
+        } else {
+            setPlayedCards(prev => [...prev, selectedWhiteCard]);
+            setSelectedWhiteCard(undefined);
+        }
+    }
+
+    useEffect(() => {
+        if (currentRound?.status === RoundStatus.WAITING_FOR_PLAYERS) {
+            if (playedCards.length === currentBlackCard?.pick) {
+                playCards(playedCards);
+            }
+        }
+    }, [playedCards.length, currentRound?.status, currentBlackCard?.pick]);
 
 
     useEffect(() => {
@@ -82,7 +159,7 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
         });
 
         socket.on("holdGame", () => {
-            showModal({ title: "Game on hold", element: <NotEnoughPlayers endGame={endGame}/>, canClose: false });
+            showModal({ title: "Game on hold", element: <NotEnoughPlayers endGame={endGame} />, canClose: false });
         });
 
         socket.on("winnerSelected", (czarId) => {
@@ -93,7 +170,7 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
                     status: RoundStatus.SHOWING_WINNER,
                 }
             });
-            setPlayers((prev) => {  
+            setPlayers((prev) => {
                 return prev.map((player) => {
                     if (player.id === czarId) {
                         return {
@@ -195,6 +272,7 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
 
     const undoPlay = () => {
         setPlayedCards([]);
+        setSelectedWhiteCard(undefined);
         socket.emit("undoPlay");
     }
 
@@ -250,11 +328,12 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
         addDeck: socket.emit.bind(socket, "addDeck"),
         removeDeck: socket.emit.bind(socket, "removeDeck"),
         startGame,
-        endGame, 
+        endGame,
         kickPlayer: socket.emit.bind(socket, "kickPlayer"),
-        playCards,
         undoPlay,
         pickWinner,
+        playSelectedCard,
+        playedCards,
         setRules: (rules: Partial<Rules>) => socket.emit("updateRules", rules),
         skipBlackCard: () => socket.emit("skipBlackCard"),
         voteToSkipBlackCard: () => socket.emit("voteToSkipBlackCard", true),

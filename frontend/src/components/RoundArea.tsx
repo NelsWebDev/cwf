@@ -1,9 +1,8 @@
-import { Button, Container, Grid, Group, Title, Stack, Box } from "@mantine/core";
+import { Button, Container, Grid,  Title, Stack, Box } from "@mantine/core";
 import { useAuth, useGame } from "../hooks";
 import SettingsPane from "./SettingsPane";
 import BlackCard from "./BlackCard";
-import { useEffect, useState } from "react";
-import { CardState, RoundStatus, WhiteCard as TWhiteCard } from "../types";
+import { CardState, RoundStatus } from "../types";
 import WhiteCard from "./WhiteCard";
 
 const RoundArea = () => {
@@ -114,74 +113,38 @@ const SelectWinnerButton = () => {
 const PlayCardButton = () => {
     const {
         selectedWhiteCard,
-        currentBlackCard,
-        playCards,
-        setSelectedWhiteCard,
+        playSelectedCard,
         undoPlay,
         isCardCzar,
         currentRound,
+        playedCards,
     } = useGame();
-
-    const [confirmedCards, setConfirmedCards] = useState<TWhiteCard[]>([]);
-    const [submitted, setSubmitted] = useState(false);
-
-    const pickCount = currentBlackCard?.pick || 1;
-
-    useEffect(() => {
-        if (confirmedCards.length === pickCount && !submitted) {
-            playCards(confirmedCards);
-            setSubmitted(true);
-        }
-    }, [confirmedCards, pickCount, playCards, submitted]);
-
-    useEffect(() => {
-        if (currentRound?.status !== RoundStatus.WAITING_FOR_PLAYERS) {
-            setSubmitted(false);
-            setConfirmedCards([]);
-            setSelectedWhiteCard(undefined);
-        }
-    }, [currentRound?.status, setSelectedWhiteCard]);
-
-    const confirmCard = () => {
-        if (!selectedWhiteCard || submitted) return;
-        setConfirmedCards((prev) => [...prev, selectedWhiteCard]);
-        setSelectedWhiteCard(undefined);
-    };
-
-    const handleUndo = () => {
-        undoPlay();
-        setConfirmedCards([]);
-        setSelectedWhiteCard(undefined);
-        setSubmitted(false);
-    };
-
+    
+    
     if (isCardCzar || currentRound?.status !== RoundStatus.WAITING_FOR_PLAYERS) return null;
-
+    
+    if(playedCards.length === currentRound.blackCard.pick) {
+        return (
+            <Button
+                size="md"
+                w="350px"
+                onClick={undoPlay}
+                c="white"
+            >
+                Undo
+            </Button>
+        )
+    }
     return (
-        <Group>
-            {!submitted ? (
-                <Button
-                    size="md"
-                    w="350px"
-                    disabled={!selectedWhiteCard}
-                    onClick={confirmCard}
-                    c="white"
-                >
-                    {confirmedCards.length === 0 ? "Select a Card" : "Confirm Card"}
-                </Button>
-            ) : (
-                <Button
-                    size="md"
-                    w="350px"
-                    variant="outline"
-                    color="blue"
-                    bg="inherit"
-                    onClick={handleUndo}
-                >
-                    Undo
-                </Button>
-            )}
-        </Group>
+        <Button
+            size="md"
+            w="350px"
+            disabled={!selectedWhiteCard}
+            onClick={playSelectedCard}
+            c="white"
+        >
+            Play Card
+        </Button>
     );
 };
 
