@@ -1,8 +1,9 @@
-import { IconCardsFilled, IconChevronDown, IconLogout, IconPaletteFilled, IconSettingsFilled, IconStar } from '@tabler/icons-react';
-import { Button, Container, CSSProperties, Group, MantineColorScheme, Modal, Select, useMantineColorScheme } from '@mantine/core';
+import { IconCardsFilled, IconLogout,  IconSettingsFilled, IconStar } from '@tabler/icons-react';
+import { Button, Container, CSSProperties, Group, Modal } from '@mantine/core';
 import { useAuth, useGame } from '../hooks';
 import SettingsPane from './SettingsPane';
 import { useState } from 'react';
+import ThemeSelector from './ThemeSelector';
 
 const navButtonStyle: CSSProperties = {
   color: 'var(--mantine-color-white)',
@@ -14,7 +15,6 @@ export function HeaderMenu() {
   const [opened, setOpened] = useState(false);
   const { logout } = useAuth();
   const show = () => setOpened(true);
-  const { colorScheme, setColorScheme } = useMantineColorScheme();
   return (
     <>
       {opened && (<Modal size="xl"
@@ -57,19 +57,7 @@ export function HeaderMenu() {
                 size="md" leftSection={<IconSettingsFilled size={16} />} onClick={show}>
                 Settings
               </Button>
-              <Select
-                leftSection={<IconPaletteFilled size={16} />}
-                rightSection={<IconChevronDown size={16} color="white"/>}
-                data={[
-                  { value: 'auto', label: 'Auto' },
-                  { value: 'light', label: 'Light' },
-                  { value: 'dark', label: 'Dark' },
-                ]}
-                value={colorScheme}
-                searchValue="Theme"
-                onChange={(value) => value && setColorScheme(value as MantineColorScheme)}
-                styles={{root: { width: "120px", }, section: { color: "white" }, input: { background: 'transparent', border: "none", color: "var(--mantine-color-white)", fontWeight: "bold" } }}
-              />
+              <ThemeSelector/>
               <Button size="md" style={navButtonStyle} leftSection={<IconLogout size={16} />} color="red" onClick={logout}>
                 Logout
               </Button>

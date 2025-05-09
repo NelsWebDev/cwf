@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { Button,  Container, Paper, PasswordInput, Text, TextInput, Title } from "@mantine/core";
+import { Button, Center, Container, Paper, PasswordInput, Text, TextInput, Title } from "@mantine/core";
+import ThemeSelector from "../../components/ThemeSelector";
 
 
 
@@ -8,7 +9,7 @@ import { Button,  Container, Paper, PasswordInput, Text, TextInput, Title } from
 const LoginPage = () => {
   const [usernameInput, setUsernameInput] = useState(import.meta.env.VITE_AUTOFILL_USERNAME || '');
   const [passwordInput, setPasswordInput] = useState(import.meta.env.VITE_AUTOFILL_PASSWORD || '');
-  const { login, errorMessage,  isAuthenticated, disconnected, reconnect} = useAuth();
+  const { login, errorMessage, isAuthenticated, disconnected, reconnect } = useAuth();
 
   if (localStorage.getItem('authToken') && !isAuthenticated && !errorMessage) {
     return <h4>Loading....</h4>
@@ -29,10 +30,10 @@ const LoginPage = () => {
         }
       }}>
         {errorMessage && (
-          <Text size="sm" mb="md" 
-          style={{ textAlign: 'center', color: 'light-dark(var(--mantine-color-red-8), var(--mantine-color-red-3))' }}>
+          <Text size="sm" mb="md"
+            style={{ textAlign: 'center', color: 'light-dark(var(--mantine-color-red-8), var(--mantine-color-red-3))' }}>
             {errorMessage !== "invalid" && errorMessage}
-            {errorMessage == "invalid" && (<iframe src="https://youtube.com/embed/ukznXQ3MgN0?autoplay=1&start=12&mute=0" 
+            {errorMessage == "invalid" && (<iframe src="https://youtube.com/embed/ukznXQ3MgN0?autoplay=1&start=12&mute=0"
               style={{ width: '226px', height: '400px', border: 'none', marginTop: '10px' }}
               title="Error Video"
             ></iframe>)}
@@ -40,17 +41,32 @@ const LoginPage = () => {
         {(!disconnected || errorMessage === "You are logged out") && (<><TextInput label="Name"
           styles={{ label: { color: 'light-dark(var(--mantine-color-dark-9), var(--mantine-color-white))' } }}
           placeholder="Your Name" required onChange={e => setUsernameInput(e.currentTarget.value)} value={usernameInput} />
-        <PasswordInput label="Password" placeholder="Game password" required mt="md"
-          styles={{ label: { color: 'light-dark(var(--mantine-color-dark-9), var(--mantine-color-white))' } }}
-          onChange={e => setPasswordInput(e.currentTarget.value)} value={passwordInput} />
-          
-        <Button fullWidth mt="xl" onClick={() => login(usernameInput, passwordInput)}>
-          Sign in
-        </Button></>)}
+          <PasswordInput label="Password" placeholder="Game password" required mt="md"
+            styles={{ label: { color: 'light-dark(var(--mantine-color-dark-9), var(--mantine-color-white))' } }}
+            onChange={e => setPasswordInput(e.currentTarget.value)} value={passwordInput} />
+
+          <Button fullWidth mt="xl" onClick={() => login(usernameInput, passwordInput)}>
+            Sign in
+          </Button></>)}
         {disconnected && errorMessage != "You are logged out" && (
           <Button fullWidth mt="xl" onClick={() => reconnect()}>Rejoin</Button>
         )}
       </Paper>
+      <Center>
+        <ThemeSelector
+          mt="xl"
+          leftSection={null}
+          searchValue="Select Theme"
+          styles={{
+            root: {
+              width: "140px",
+            },
+            input: {
+              backgroundColor: 'light-dark(var(--mantine-color-blue-5), var(--mantine-color-dark-4))',
+            }
+          }}
+        />
+      </Center>
     </Container>
 
 
