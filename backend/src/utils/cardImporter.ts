@@ -27,6 +27,7 @@ export const parseDeckToPrismaCreate = (deck: OriginalDeckFormat) : Prisma.DeckC
       if(index !== lastIndex) {
         formattedString += " _________ ";
       }  
+      formattedString = formattedString.replace(/(_+)\s+([!?,.])/g, '$1$2').trim();
     });
 
     return {text: formattedString, pick: numberOfBlanks};
