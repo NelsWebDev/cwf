@@ -1,4 +1,10 @@
 {
+    "ts-node": {
+        "transpileOnly": true,
+        "require": [
+            "typescript-transform-paths/register"
+        ],
+    },
     "compilerOptions": {
         "target": "ES2020",
         "module": "commonjs",
@@ -8,6 +14,11 @@
         "outDir": "dist",
         "rootDir": "src",
         "moduleResolution": "node",
+        "plugins": [
+            {
+                "transform": "typescript-transform-paths"
+            },
+        ]
     },
     "include": [
         "src/**/*.ts",

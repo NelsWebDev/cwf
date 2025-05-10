@@ -1,0 +1,14 @@
+{
+  "name": "cwf",
+  "version": "1.0.0",
+  "repository": "https://github.com/NelsWebDev/cwf",
+  "author": "Nels Romerdahl <7355705+NelsWebDev@users.noreply.github.com>",
+  "license": "MIT",
+  "scripts": {
+    "build": "yarn --cwd frontend build && yarn --cwd backend build",
+    "start": "yarn --cwd backend start",
+    "install": "yarn --cwd frontend install && yarn --cwd backend install",
+    "f:dev": "yarn --cwd frontend dev",
+    "b:dev": "yarn --cwd backend dev"
+  }
+}

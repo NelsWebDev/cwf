@@ -9,7 +9,7 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
     const [isAuthenticating, setIsAuthenticating] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [user, setUser] = useState<Omit<User, "isCardCzar">>();
-    const socket: Socket = useMemo(() => io(import.meta.env.VITE_API_URL, {
+    const socket: Socket = useMemo(() => io("/", {
         autoConnect: localStorage.getItem("userId") ? true : false,
         auth: { userId: localStorage.getItem("userId") || "" },
     }), []);
