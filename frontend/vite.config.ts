@@ -7,6 +7,9 @@ export default defineConfig({
   server: {
     port: 8080,
     open: true,
+    proxy: {
+      '/api': "http://localhost",
+    },
     allowedHosts: ['mbp.local', 'platypus-concise-simply.ngrok-free.app']
   },
   build: {
