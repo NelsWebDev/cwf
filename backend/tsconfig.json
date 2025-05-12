@@ -1,30 +1,12 @@
+// tsconfig.json (main one for dev and testing)
 {
-    "ts-node": {
-        "transpileOnly": true,
-        "require": [
-            "typescript-transform-paths/register"
-        ],
-    },
-    "compilerOptions": {
-        "target": "ES2020",
-        "module": "commonjs",
-        "allowSyntheticDefaultImports": true,
-        "esModuleInterop": true,
-        "strict": false,
-        "outDir": "dist",
-        "rootDir": "src",
-        "moduleResolution": "node",
-        "plugins": [
-            {
-                "transform": "typescript-transform-paths"
-            },
-        ]
-    },
-    "include": [
-        "src/**/*.ts",
-    ],
-    "exclude": [
-        "node_modules",
-        "dist"
-    ],
+  "extends": "./tsconfig.build.json",
+  "compilerOptions": {
+    "types": ["vitest/globals", "node"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/__tests__/**/*.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
 }
