@@ -64,26 +64,14 @@ export class Game {
     }
 
     const { blackCards, whiteCards } = await this.fetchCards();
-    this._blackCards = blackCards;
-    this._whiteCards = whiteCards;
 
-    const minBlackCards = this.players.length * this.rules.pointsToWin - 1;
-    const minWhiteCards =
-      this.players.length * this.rules.pointsToWin -
-      1 +
-      this.players.length * 10;
+    const minBlackCards = (this.players.length * (this.rules.pointsToWin - 1)) + 1;
     if (blackCards.length < minBlackCards) {
       throw new Error("Not enough black cards");
     }
-    if (whiteCards.length < minWhiteCards) {
-      throw new Error("Not enough white cards");
-    }
-
-    this._whiteCards.push(
-      ...CardManager.makeBlankWhiteCards(this.rules.numberOfCustomCards),
-    );
+    this._blackCards = blackCards;
     this.shuffleBlackCards();
-    this.shuffleWhiteCards();
+    this._whiteCards = this.shuffleWhiteCardsWithAddedCustoms(whiteCards);
 
     const cardsForPlayers = this.drawWhiteCards(this.players.length * 10);
     this.players.forEach((player) => {
@@ -101,6 +89,40 @@ export class Game {
     this.moveToNextCzar();
     this._currentRound = new GameRound(blackCard, this.currentCardCzar);
     ioServer.emit("game", this.toJSON());
+  }
+
+  private shuffleWhiteCardsWithAddedCustoms(cards: WhiteCard[]) {
+    const randomCards = cards.sort(() => Math.random() - 0.5);
+    const totalWhiteCardsNeeded = this.getNumberOfWhiteCardsInGame();
+    const lastIndex = totalWhiteCardsNeeded - this.rules.numberOfCustomCards;
+    const firstPart = randomCards.slice(0, lastIndex);
+    const secondPart = randomCards.slice(lastIndex);
+
+    firstPart.push(...CardManager.makeBlankWhiteCards(this.rules.numberOfCustomCards));
+    const firstPartShuffled = firstPart.sort(() => Math.random() - 0.5);
+    const result = [
+      ...firstPartShuffled,
+      ...secondPart,
+    ].map((card) => ({
+      ...card,
+      state: CardState.AVAILABLE,
+    }));
+
+    if (result.length < totalWhiteCardsNeeded) {
+      throw new Error(`Need ${totalWhiteCardsNeeded} white cards but only got ${result.length}`);
+    }
+    return result;
+  }
+
+  private getNumberOfWhiteCardsInGame() {
+    const playerCount = this.players.length;
+    const pointsToWin = this.rules.pointsToWin;
+    const cardsInHand = 10;
+    const maxNumberRounds = (playerCount * (pointsToWin - 1)) + 1;
+    const totalCardsPlayed = maxNumberRounds * (playerCount - 1); // 1 player is czar each round
+    const initialHands = cardsInHand * playerCount;
+
+    return initialHands + totalCardsPlayed;
   }
 
   endGame() {
@@ -251,7 +273,7 @@ export class Game {
     const card = this._blackCards.find(
       (card) => card.state === CardState.AVAILABLE,
     );
-    if(!card) {
+    if (!card) {
       this.shuffleBlackCards();
       return this.drawBlackCard();
     }
