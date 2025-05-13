@@ -41,7 +41,6 @@ const RoundArea = () => {
                                 <Box p="sm">
                                     {cards.length === 0 && (
                                         <WhiteCard
-                                        ownerId={userId}
                                         data={{
                                             id: "",
                                             text: "",
