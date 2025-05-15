@@ -16,11 +16,3 @@ services:
     rootDir: frontend
     buildCommand: yarn install && yarn build
     staticPublishPath: dist
-databases:
-  - name: cwf-db
-    user: cwf
-    databaseName: prisma
-    plan: free
-    ipAllowList: 
-      - source: 71.197.144.8
-        description: "Nels Home"
