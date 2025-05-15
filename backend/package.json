@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "nodemon src/index.ts",
-    "build": "tspc --project tsconfig.build.json",
+    "build": "prisma generate; tspc --project tsconfig.build.json",
     "start": "node dist/index.js",
     "test": "vitest"
   },
