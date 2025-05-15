@@ -19,8 +19,6 @@ express.use("/api", ApiRouter);
 
 ioServer.use(socketManager.middleware);
 
-console.log(process.env);
-
 ioServer.on("connection", (socket) => {
   socketManager.onSocketConnection(socket);
 });
