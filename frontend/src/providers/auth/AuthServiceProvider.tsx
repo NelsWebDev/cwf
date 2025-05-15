@@ -9,7 +9,7 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
     const [isAuthenticating, setIsAuthenticating] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [user, setUser] = useState<Omit<User, "isCardCzar">>();
-    const socket: Socket = useMemo(() => io("/", {
+    const socket: Socket = useMemo(() => io(import.meta.env.VITE_API_URL, {
         autoConnect: localStorage.getItem("userId") ? true : false,
         auth: { userId: localStorage.getItem("userId") || "" },
     }), []);
@@ -28,7 +28,7 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
 
         try {
             
-            const res = await fetch("/api/login", {
+            const res = await fetch(import.meta.env.VITE_API_URL + "/api/login", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

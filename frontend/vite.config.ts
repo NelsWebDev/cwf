@@ -14,7 +14,7 @@ export default defineConfig({
     allowedHosts: ['mbp.local', 'platypus-concise-simply.ngrok-free.app']
   },
   build: {
-    outDir: "../backend/dist/public",
+    outDir: "./dist",
     emptyOutDir: true,
   },
 })

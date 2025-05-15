@@ -1,0 +1,26 @@
+services:
+  - type: web
+    runtime: node
+    name: cwf-backend
+    env: node
+    rootDir: backend
+    buildCommand: yarn install && yarn build
+    startCommand: yarn start
+    plan: free
+    envVars:
+      - key: PORT
+        value: 3000
+  - type: web
+    runtime: static
+    name: cwf-frontend
+    rootDir: frontend
+    buildCommand: yarn install && yarn build
+    staticPublishPath: dist
+databases:
+  - name: cwf-db
+    user: cwf
+    databaseName: prisma
+    plan: free
+    ipAllowList: 
+      - source: 71.197.144.8
+        description: "Nels Home"
