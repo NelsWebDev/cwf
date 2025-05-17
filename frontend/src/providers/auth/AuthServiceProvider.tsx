@@ -4,6 +4,21 @@ import { io } from "socket.io-client";
 import LoginPage from "./LoginPage";
 import { AuthServiceContext } from "../Contexts";
 
+const isAPIOnline = async () => {
+    return new Promise(async (resolve) => {
+        try {
+            const res = await fetch(import.meta.env.VITE_API_URL + "/health", {
+                method: "GET",
+            });
+            res.status === 200 ? resolve(true) : resolve(false);
+        }
+        catch (e) {
+            resolve(false);
+        }
+        resolve(false);
+    })
+};
+
 const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -48,13 +63,17 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
             }
         }
         catch {
-            if(!navigator.onLine) {
-                setErrorMessage("Network error: Please check your internet connection");
-            } else {
-                setErrorMessage("Game Server errror");
-            }
             setIsAuthenticated(false);
             setIsAuthenticating(false);
+            if(!navigator.onLine) {
+                setErrorMessage("Network error: Please check your internet connection");
+            } 
+            else if(!await isAPIOnline()){
+                setErrorMessage("Game Server is offline and will attempt to restart. Wait 30 second, refresh the page and try again.");
+            }
+            else {
+                setErrorMessage("An unknown error occurred. Please try again");
+            }
         } 
     }
 
