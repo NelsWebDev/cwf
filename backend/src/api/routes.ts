@@ -84,4 +84,8 @@ routes.post("/decks/import", async (req, res) => {
   }
 });
 
+routes.get("/health", async (req, res) => {
+  res.sendStatus(200);
+});
+
 export default routes;

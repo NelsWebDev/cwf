@@ -242,7 +242,7 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
         }
 
         setAddDeckError(undefined);
-        fetch(import.meta.env.VITE_API_URL + "/api/decks/import", {
+        fetch(import.meta.env.VITE_API_URL + "/decks/import", {
             method: "POST",
             body: JSON.stringify({
                 deckId: formattedID,
@@ -298,7 +298,7 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
         setPlayedCards([]);
     }, [currentRound?.status]);
     useMemo(() => {
-        fetch(import.meta.env.VITE_API_URL + "/api/decks").then((response) => {
+        fetch(import.meta.env.VITE_API_URL + "/decks").then((response) => {
             if (response.ok) {
                 response.json().then((data: CardDeck[]) => {
                     setAllDecks(data);

@@ -15,7 +15,7 @@ express.use(
     origin: "*",
   }),
 );
-express.use("/api", ApiRouter);
+express.use("/", ApiRouter);
 
 ioServer.use(socketManager.middleware);
 
