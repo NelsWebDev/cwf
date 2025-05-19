@@ -12,5 +12,10 @@ declare namespace NodeJS {
      * @prop Password for the game
      */
     GAME_PASSWORD?: string;
+
+    /**
+     * @prop The URL for the frontend of the application
+     */
+    FRONTEND_URL?: string;
   }
 }

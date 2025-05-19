@@ -88,4 +88,8 @@ routes.get("/health", async (req, res) => {
   res.sendStatus(200);
 });
 
+routes.get("/", async (_, res) => {
+  res.redirect(process.env.FRONTEND_URL);
+});
+
 export default routes;

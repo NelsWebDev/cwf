@@ -3,21 +3,8 @@ import { AuthService, LoginResponse, Socket, User } from "../../types";
 import { io } from "socket.io-client";
 import LoginPage from "./LoginPage";
 import { AuthServiceContext } from "../Contexts";
+import { urlIsOK } from "../../utils/urls";
 
-const isAPIOnline = async () => {
-    return new Promise(async (resolve) => {
-        try {
-            const res = await fetch(import.meta.env.VITE_API_URL + "/health", {
-                method: "GET",
-            });
-            res.status === 200 ? resolve(true) : resolve(false);
-        }
-        catch (e) {
-            resolve(false);
-        }
-        resolve(false);
-    })
-};
 
 const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -31,7 +18,7 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
     const [disconnected, setDisconnected] = useState(false);
 
     useEffect(() => {
-        if(user?.id) {
+        if (user?.id) {
             localStorage.setItem("userId", user.id);
         }
 
@@ -41,8 +28,11 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
         setIsAuthenticating(true);
         setErrorMessage("");
 
+        const ok = await urlIsOK(import.meta.env.VITE_API_URL + "/health", 2_000);
+        if (!ok) {
+            window.location.href = import.meta.env.VITE_API_URL as string;
+        }
         try {
-            
             const res = await fetch(import.meta.env.VITE_API_URL + "/login", {
                 method: "POST",
                 headers: {
@@ -51,7 +41,7 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
                 body: JSON.stringify({ username, password }),
             });
             if (res.status === 200) {
-                const data  : LoginResponse= await res.json();
+                const data: LoginResponse = await res.json();
                 setUser(data.user);
                 socket.auth = { userId: data.user?.id };
                 socket.connect();
@@ -65,16 +55,13 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
         catch {
             setIsAuthenticated(false);
             setIsAuthenticating(false);
-            if(!navigator.onLine) {
+            if (!navigator.onLine) {
                 setErrorMessage("Network error: Please check your internet connection");
-            } 
-            else if(!await isAPIOnline()){
-                setErrorMessage("Game Server is offline and will attempt to restart. Wait 30 second, refresh the page and try again.");
             }
             else {
                 setErrorMessage("An unknown error occurred. Please try again");
             }
-        } 
+        }
     }
 
     useEffect(() => {
