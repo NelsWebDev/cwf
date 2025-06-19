@@ -1,0 +1,17 @@
+{
+    "name": "db-backup",
+    "version": "1.0.0",
+    "type": "module",
+    "main": "dist/backup.js",
+    "scripts": {
+        "build": "tsc",
+        "start": "node dist/backup.js"
+    },
+    "dependencies": {
+        "googleapis": "^150.0.1"
+    },
+    "devDependencies": {
+        "@types/node": "^24.0.3",
+        "typescript": "^5.8.3"
+    }
+}

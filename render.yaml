@@ -16,3 +16,8 @@ services:
     rootDir: frontend
     buildCommand: yarn install && yarn build
     staticPublishPath: dist
+  - type: cron
+    name: db-weekly-backup
+    schedule: '@weekly'
+    dockerfilePath: db-backup/Dockerfile
+    envVars: [] 
