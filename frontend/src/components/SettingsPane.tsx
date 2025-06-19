@@ -93,15 +93,18 @@ const DeckSettings = () => {
     const { cardDecks, addDeck, removeDeck, gameStarted, allDecks} = useGame();
     const [deckInput, setDeckInput] = useState<string>("");
 
-    const availableDecks = useMemo(() => {
-        const allAvailablelDecks = allDecks.filter((deck) => !cardDecks.find((d) => d.id === deck.id) &&
+    const allAvailablelDecks = useMemo(() => {
+        return allDecks.filter((deck) => !cardDecks.find((d) => d.id === deck.id) &&
             deck.name.toLowerCase().includes(deckInput.toLowerCase())
         ).sort((a, b) => a.name.localeCompare(b.name));
-        const nonCustomDecks = allAvailablelDecks.filter((deck) => deck.importedDeckId?.startsWith("CAH"));
-        const customDecks = allAvailablelDecks.filter((deck) => !deck.importedDeckId?.startsWith("CAH"));
-        return [...customDecks, ...nonCustomDecks];
     }
         , [allDecks, cardDecks, deckInput]);
+    const availableCustomDecks = useMemo(() => {
+        return allAvailablelDecks.filter((deck) => !deck.importedDeckId?.startsWith("CAH"));
+    }, [allAvailablelDecks]);
+    const availableStandardDecks = useMemo(() => {
+        return allAvailablelDecks.filter((deck) => deck.importedDeckId?.startsWith("CAH"));
+    }, [allAvailablelDecks]);
 
 
     return (
@@ -154,7 +157,7 @@ const DeckSettings = () => {
                                 <Text style={{ fontSize: "1.2rem" }} fw="bold">Available Decks</Text>
                             </Table.Th>
                         </Table.Tr>
-                        {(availableDecks.length > 6 || deckInput) && (<Table.Tr>
+                        {((availableStandardDecks.length + availableCustomDecks.length) > 6 || deckInput) && (<Table.Tr>
                             <Table.Td colSpan={2}>
                                 <Input placeholder="Search Decks"
                                     leftSection={<IconSearch />}
@@ -162,7 +165,32 @@ const DeckSettings = () => {
                             </Table.Td>
                         </Table.Tr>)}
                         <ScrollArea h={250}>
-                            {availableDecks.map((deck) => (
+                            <Table.Tr>
+                                <Table.Th colSpan={2}>
+                                    <Title order={4}>Custom Decks</Title>
+                                </Table.Th>
+                            </Table.Tr>
+                            {availableCustomDecks.map((deck) => (
+                                <Table.Tr key={deck.id}>
+                                    <Table.Td pl="sm">
+                                        <Text>{deck.name}</Text>
+                                    </Table.Td>
+                                    <Table.Td align="right" pr="xl">
+                                        <Button
+                                            p='sm'
+                                            color="light-dark(var(--mantine-color-blue-6), var(--mantine-color-dark-4))"
+                                            onClick={() => addDeck(deck.id)}>
+                                            <IconPlus />
+                                        </Button>
+                                    </Table.Td>
+                                </Table.Tr>
+                            ))}
+                            <Table.Tr>
+                                <Table.Th colSpan={2}>
+                                    <Title order={4}>Standard Decks</Title>
+                                </Table.Th>
+                            </Table.Tr>
+                            {availableStandardDecks.map((deck) => (
                                 <Table.Tr key={deck.id}>
                                     <Table.Td pl="sm">
                                         <Text>{deck.name}</Text>
