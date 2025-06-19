@@ -1,7 +1,7 @@
 import { Button, Checkbox, Input, NativeSelect, ScrollArea, SimpleGrid, Table, Tabs, Text, Title } from "@mantine/core";
-import { useAuth, useGame } from "../hooks";
-import { useEffect, useMemo, useState } from "react";
 import { IconPlus, IconSearch, IconX } from "@tabler/icons-react";
+import { useEffect, useMemo, useState } from "react";
+import { useAuth, useGame } from "../hooks";
 
 
 
@@ -94,9 +94,12 @@ const DeckSettings = () => {
     const [deckInput, setDeckInput] = useState<string>("");
 
     const availableDecks = useMemo(() => {
-        return allDecks.filter((deck) => !cardDecks.find((d) => d.id === deck.id) &&
+        const allAvailablelDecks = allDecks.filter((deck) => !cardDecks.find((d) => d.id === deck.id) &&
             deck.name.toLowerCase().includes(deckInput.toLowerCase())
         ).sort((a, b) => a.name.localeCompare(b.name));
+        const nonCustomDecks = allAvailablelDecks.filter((deck) => deck.importedDeckId?.startsWith("CAH"));
+        const customDecks = allAvailablelDecks.filter((deck) => !deck.importedDeckId?.startsWith("CAH"));
+        return [...customDecks, ...nonCustomDecks];
     }
         , [allDecks, cardDecks, deckInput]);
 

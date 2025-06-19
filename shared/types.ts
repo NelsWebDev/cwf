@@ -40,6 +40,7 @@ export type CardDeck = {
     description?: string;
     numberOfWhiteCards: number;
     numberOfBlackCards: number;
+    importedDeckId?: string;
     createdAt: Date;
     updatedAt: Date;
 }
