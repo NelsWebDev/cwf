@@ -45,6 +45,9 @@ export class GameUser {
         this._timemoutDestroy = undefined;
         console.log(`User ${this.username} deleted due to inactivity`);
         socketManager.gameUsers.delete(this.id);
+        if (game.players.length < 3 && game.started) {
+          game.endGame();
+        }
       }, 1_000 * 30);
     }
   }

@@ -17,5 +17,11 @@ declare namespace NodeJS {
      * @prop The URL for the frontend of the application
      */
     FRONTEND_URL?: string;
+
+    /**
+     * @prop The URL for the backend of the application
+     */
+    BACKEND_URL?: string;
+
   }
 }

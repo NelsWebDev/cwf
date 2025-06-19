@@ -1,7 +1,7 @@
 import bodyParser from "body-parser";
 import { Router } from "express";
-import { socketManager } from "../singletons";
 import { CardManager } from "../CardManager";
+import { socketManager } from "../singletons";
 import { importDeck } from "../utils/cardImporter";
 
 const routes = Router();
@@ -85,6 +85,7 @@ routes.post("/decks/import", async (req, res) => {
 });
 
 routes.get("/health", async (req, res) => {
+  console.log("Health check received");
   res.sendStatus(200);
 });
 
