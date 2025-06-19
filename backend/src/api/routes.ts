@@ -7,6 +7,12 @@ import { importDeck } from "../utils/cardImporter";
 const routes = Router();
 routes.use(bodyParser.json());
 
+routes.use((_, res, next) => {
+  res.header("request-id", crypto.randomUUID());
+  next();
+});
+
+
 routes.post("/login", async ({ body }, res) => {
   try {
     if (!body || typeof body !== "object") {
