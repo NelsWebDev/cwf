@@ -18,6 +18,7 @@ services:
     staticPublishPath: dist
   - type: cron
     name: db-weekly-backup
+    runtime: docker
     schedule: '@weekly'
     dockerfilePath: db-backup/Dockerfile
-    envVars: [] 
+    envVars: []
