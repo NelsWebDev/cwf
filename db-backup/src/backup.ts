@@ -1,4 +1,4 @@
-import { spawn } from 'child_process';
+import { execSync, spawn } from 'child_process';
 import { config } from 'dotenv';
 import fs from 'fs';
 import { google } from 'googleapis';
@@ -8,6 +8,7 @@ config();
 const credentialsPath = path.join(import.meta.url, '../../google_account_credentials.json').replace("file:", "");
 const credentials = JSON.parse(fs.readFileSync(credentialsPath, 'utf-8'));
 
+console.log(execSync("env"));
 
 const auth = new google.auth.GoogleAuth({
     scopes: ['https://www.googleapis.com/auth/drive.file'],
