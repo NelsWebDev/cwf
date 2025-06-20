@@ -17,6 +17,8 @@ model User {
   username String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  @@map("users")
 }
 
 model BlackCard {
@@ -27,6 +29,8 @@ model BlackCard {
   updatedAt DateTime @updatedAt
   deckId    String
   deck      Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+
+  @@map("cards_blacks")
 }
 
 model WhiteCard {
@@ -36,6 +40,8 @@ model WhiteCard {
   updatedAt DateTime @updatedAt
   deckId    String
   deck      Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+
+  @@map("cards_whites")
 }
 model Deck {
   id        String      @id @default(cuid())
@@ -47,4 +53,6 @@ model Deck {
   updatedAt DateTime    @updatedAt
   blackCards BlackCard[]
   whiteCards WhiteCard[]
+
+  @@map("cards_decks")
 }
