@@ -17,6 +17,7 @@ services:
     buildCommand: yarn install && yarn build
     staticPublishPath: dist
   - type: cron
+    dockerContext: db-backup
     name: db-weekly-backup
     runtime: docker
     schedule: '@weekly'
