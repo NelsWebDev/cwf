@@ -8,7 +8,6 @@ config();
 const credentialsPath = path.join(import.meta.url, '../../google_account_credentials.json').replace("file:", "");
 const credentials = JSON.parse(fs.readFileSync(credentialsPath, 'utf-8'));
 
-console.log(process.env);
 
 const auth = new google.auth.GoogleAuth({
     scopes: ['https://www.googleapis.com/auth/drive.file'],
@@ -22,7 +21,7 @@ async function backupPostgresToDrive() {
         '--no-owner',
         '--no-acl',
         '--format=plain',
-        process.env.DATABASE_URL as string,
+        `--dbname=${process.env.DATABASE_URL!}`,
     ]);
 
     const fileName = `pg_backup_${new Date().toISOString()}.sql`;
