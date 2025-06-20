@@ -16,12 +16,12 @@ services:
     rootDir: frontend
     buildCommand: yarn install && yarn build
     staticPublishPath: dist
-  # - type: cron
-  #   name: db-weekly-backup
-  #   runtime: docker
-  #   schedule: '@weekly'
-  #   dockerfilePath: db-backup/Dockerfile
-  #   envVars: []
+  - type: cron
+    name: db-weekly-backup
+    runtime: docker
+    schedule: '@weekly'
+    dockerfilePath: db-backup/Dockerfile
+    envVars: []
 databases:
   - name: cwf-db
     plan: free

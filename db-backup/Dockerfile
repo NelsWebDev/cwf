@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y postgresql-client && apt-get clean && r
 WORKDIR /app
 
 COPY package*.json ./
+COPY google_account_credentials.json ./
 RUN npm install
 
 COPY . .

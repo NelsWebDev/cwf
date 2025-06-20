@@ -1,12 +1,17 @@
 import { spawn } from 'child_process';
-import 'dotenv/config';
+import { config } from 'dotenv';
+import fs from 'fs';
 import { google } from 'googleapis';
+import path from 'path';
 import { Readable } from 'stream';
+config();
+const credentialsPath = path.join(import.meta.url, '../../google_account_credentials.json').replace("file:", "");
+const credentials = JSON.parse(fs.readFileSync(credentialsPath, 'utf-8'));
 
 
 const auth = new google.auth.GoogleAuth({
     scopes: ['https://www.googleapis.com/auth/drive.file'],
-    credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON || '{}'),
+    credentials
 });
 
 const drive = google.drive({ version: 'v3', auth });

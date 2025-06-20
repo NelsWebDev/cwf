@@ -8,6 +8,7 @@
         "start": "node dist/backup.js"
     },
     "dependencies": {
+        "dotenv": "^16.5.0",
         "googleapis": "^150.0.1"
     },
     "devDependencies": {
