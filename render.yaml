@@ -23,7 +23,3 @@ services:
     schedule: '@weekly'
     dockerfilePath: db-backup/Dockerfile
     envVars: []
-databases:
-  - name: cwf-db
-    plan: free
-    databaseName: cwf
