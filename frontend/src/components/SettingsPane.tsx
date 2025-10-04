@@ -52,7 +52,7 @@ const GeneralSettings = () => {
                     label="Allow Undo" checked={rules.canUndo} onChange={(e) => setRule("canUndo", e.currentTarget.checked)} />
                 <Checkbox
                     disabled={gameStarted}
-                    label="Cands With Multiple Aswers" checked={rules.allowMultipleAnswerBlackCards} onChange={(e) => setRule("allowMultipleAnswerBlackCards", e.currentTarget.checked)} />
+                    label="Cards With Multiple Answers" checked={rules.allowMultipleAnswerBlackCards} onChange={(e) => setRule("allowMultipleAnswerBlackCards", e.currentTarget.checked)} />
             </SimpleGrid>
             <SimpleGrid cols={2} mt="md">
                 <NativeSelect label="Score Limit"
