@@ -1,6 +1,6 @@
-import { prismaClient } from "../singletons";
-import { CardManager } from "../CardManager";
 import { Prisma } from "@prisma/client";
+import { CardManager, deckInclude } from "../CardManager";
+import { prismaClient } from "../singletons";
 
 
 type OriginalDeckFormat = {
@@ -90,7 +90,7 @@ export const importDeck = async (deckCode: string) => {
 
     const newDeck  = await tx.deck.create({
       data: deck,
-      include: {_count: {select: {blackCards: true, whiteCards: true}}},
+      include: deckInclude,
     });
 
     return CardManager.deckFromPrismaQuery(newDeck);

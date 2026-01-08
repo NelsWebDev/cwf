@@ -72,6 +72,36 @@ routes.get("/decks", async (req, res) => {
   }
 });
 
+routes.post("/decks", async (req, res) => {
+  try {
+    const newDeck = await CardManager.createDeck(req.body.name, req.body.description);
+    res.status(201).json({ deck: newDeck });
+  } catch (error) {
+    console.log("Error parsing JSON: ", error);
+    res.status(400).json({ error: "Invalid JSON" });
+    return;
+  }
+});
+
+routes.patch("/decks/:deckId", async (req, res) => {
+  try {
+    const updatedDeck = await CardManager.updateDeck({
+      id: req.params.deckId,
+      ...req.body,
+    });
+    if (!updatedDeck) {
+      res.status(404).json({ error: "Deck not found" });
+      return;
+    }
+    res.json({ deck: updatedDeck });
+  }
+  catch (error) {
+    console.log("Error parsing JSON: ", error);
+    res.status(400).json({ error: "Invalid JSON" });
+    return;
+  }
+});
+
 routes.post("/decks/import", async (req, res) => {
   if (!req.body || typeof req.body !== "object" || !req.body.deckId) {
     res.status(400).json({ error: "Invalid request" });
