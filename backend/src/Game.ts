@@ -252,6 +252,17 @@ export class Game {
     };
   }
 
+  shufflePlays() {
+    if (!this._currentRound) {
+      throw new Error("No current round");
+    }
+    const playsArray = Array.from(
+      this._currentRound._plays.entries(),
+    );
+    const shuffledPlays = playsArray.sort(() => Math.random() - 0.5);
+    this._currentRound._plays = new Map(shuffledPlays);
+  }
+
   getNextCzar() {
     if (socketManager.activeUsers.length === 0) {
       throw new Error("No players");

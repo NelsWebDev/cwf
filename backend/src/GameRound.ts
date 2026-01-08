@@ -2,10 +2,10 @@ import { GameUser } from "./session/GameUser";
 import { game, ioServer, socketManager } from "./singletons";
 import {
   BlackCard,
+  CardState,
+  RoundStatus,
   GameRound as TGameGround,
   WhiteCard,
-  RoundStatus,
-  CardState,
 } from "./types";
 
 export class GameRound implements TGameGround {
@@ -61,6 +61,7 @@ export class GameRound implements TGameGround {
       setTimeout(() => {
         if (this._plays.size === socketManager.activeUsers.length - 1) {
           this.status = RoundStatus.SELECTING_WINNER;
+          game.currentRound.shufflePlays();
           game.emitJSON();
         }
       }, 5_000);
@@ -157,6 +158,17 @@ export class GameRound implements TGameGround {
       votesToSkip,
       plays: this.getJSONPlays(),
     };
+  }
+
+  shufflePlays() {
+    // shuffle the map entry order without changing the key/values but just the order
+    const entries = Array.from(this._plays.entries());
+    for (let i = entries.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [entries[i], entries[j]] = [entries[j], entries[i]];
+    }
+    this._plays = new Map(entries);
+    return this._plays;
   }
 
   /**
