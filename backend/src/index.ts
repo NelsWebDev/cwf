@@ -1,8 +1,8 @@
-import { config as loadEnv } from "dotenv";
-import { express, httpServer, ioServer, prismaClient, socketManager } from "./singletons";
-import ApiRouter from "./api/routes";
 import cors from "cors";
-loadEnv();
+import ApiRouter from "./api/routes";
+import { express, httpServer, ioServer, prismaClient, socketManager } from "./singletons";
+import { bootConfig } from "./utils/config";
+bootConfig();
 const HTTP_PORT = process.env.PORT || 3000;
 httpServer.listen(HTTP_PORT, () => {
   console.log(

@@ -3,4 +3,6 @@
 **/build
 **/.env
 **/.DS_Store
-frontend/.env.development
+**/.env.*
+!**/.env.example
+!**/.env.*.example

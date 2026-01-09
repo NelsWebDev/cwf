@@ -23,5 +23,10 @@ declare namespace NodeJS {
      */
     BACKEND_URL?: string;
 
+    /**
+     * @prop The prefix for all backend routes
+     */
+    API_PREFIX?: string;
+
   }
 }
