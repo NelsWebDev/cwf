@@ -1,14 +1,17 @@
-import { createServer as createHttpServer } from "http";
-import { Server as SocketServer } from "socket.io";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import Express from "express";
+import { createServer as createHttpServer } from "http";
+import { Server as SocketServer } from "socket.io";
+import { Game } from "./Game";
+import { GameUser } from "./session/GameUser";
+import { SocketManager } from "./session/SocketManager";
 import {
   ClientEmittedEventFunctions,
   ServerEmittedEventFunctions,
 } from "./types/shared";
-import { GameUser } from "./session/GameUser";
-import { SocketManager } from "./session/SocketManager";
-import { Game } from "./Game";
+import { bootConfig } from "./utils/config";
+bootConfig();
 
 export const express = Express();
 export const httpServer = createHttpServer(express);
@@ -24,7 +27,9 @@ export const ioServer = new SocketServer<
   },
 });
 
-export const prismaClient = new PrismaClient();
+const prismaAdapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+
+export const prismaClient = new PrismaClient({ adapter: prismaAdapter });
 export const socketManager = new SocketManager();
 export const game = new Game();
 
