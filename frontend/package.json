@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "install": "yarn --cwd ../card-manager install",
     "dev": "vite",
     "build": "tsc -b && vite build && yarn --cwd ../card-manager build",
     "lint": "eslint .",
