@@ -102,45 +102,6 @@ routes.get("/decks/:deckId", async (req, res) => {
   }
 });
 
-routes.post("/decks/import", async (req, res) => {
-  if (!req.body || typeof req.body !== "object" || !req.body.deckId) {
-    res.status(400).json({ error: "Invalid request" });
-    return;
-  }
-  try {
-    let id = req.body.importedDeckId;
-    if (!id || typeof id !== "string" || !id.startsWith("CAH-")) {
-      throw new Error("Invalid imported deck ID");
-    }
-    const deck = await importDeck(id);
-    res.json({ deck });
-  }
-  catch (error) {
-    const message =
-      error instanceof Error && error.message ? error.message : "Failed to import deck";
-
-    res.status(500).json({ error: message });
-  }
-});
-
-routes.post("/decks/:deckId", async (req, res) => {
-  try {
-    const updatedDeck = await CardManager.updateDeck({
-      id: req.params.deckId,
-      ...req.body,
-    });
-    if (!updatedDeck) {
-      res.status(404).json({ error: "Deck not found" });
-      return;
-    }
-    res.json({ deck: updatedDeck });
-  }
-  catch (error) {
-    console.log("Error parsing JSON: ", error);
-    res.status(400).json({ error: "Invalid JSON" });
-    return;
-  }
-});
 routes.delete("/decks/:deckId", async (req, res) => {
   try {
     const success = await CardManager.deleteDeck(req.params.deckId);
@@ -170,6 +131,26 @@ routes.post("/decks/import", async (req, res) => {
         : "Failed to import deck";
 
     res.status(500).json({ error: message });
+  }
+});
+
+
+routes.post("/decks/:deckId", async (req, res) => {
+  try {
+    const updatedDeck = await CardManager.updateDeck({
+      id: req.params.deckId,
+      ...req.body,
+    });
+    if (!updatedDeck) {
+      res.status(404).json({ error: "Deck not found" });
+      return;
+    }
+    res.json({ deck: updatedDeck });
+  }
+  catch (error) {
+    console.log("Error parsing JSON: ", error);
+    res.status(400).json({ error: "Invalid JSON" });
+    return;
   }
 });
 
