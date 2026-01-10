@@ -1,6 +1,6 @@
 export type User = {
     id: string;
-    username:string;
+    username: string;
     isActive: boolean;
     points: number;
     isCardCzar: boolean;
@@ -14,11 +14,13 @@ export type Game = {
     currentRound?: GameRound;
 }
 
-export enum RoundStatus {
-    WAITING_FOR_PLAYERS = "WAITING_FOR_PLAYERS",
-    SHOWING_WINNER = "SHOWING_WINNER",
-    SELECTING_WINNER = "SELECTING_WINNER",
-}
+export const RoundStatus = {
+    WAITING_FOR_PLAYERS: "WAITING_FOR_PLAYERS",
+    SHOWING_WINNER: "SHOWING_WINNER",
+    SELECTING_WINNER: "SELECTING_WINNER",
+} as const;
+
+export type RoundStatus = typeof RoundStatus[keyof typeof RoundStatus];
 
 export type GameRound = {
     id: string;
@@ -27,7 +29,7 @@ export type GameRound = {
     status: RoundStatus;
     winnerId?: string;
     plays: {
-        [key: string]:  WhiteCard[];
+        [key: string]: WhiteCard[];
     }
     votesToSkip: {
         [key: string]: boolean;
@@ -62,12 +64,14 @@ export const DEFAULT_RULES: Rules = {
 }
 
 
-export enum CardState  {
-    IN_USE = "IN_USE",
-    PLAYED_PREVIOUSLY = "PLAYED_PREVIOUSLY",
-    SKIPPED = "SKIPPED",
-    AVAILABLE = "AVAILABLE",
-}
+export const CardState = {
+    IN_USE: "IN_USE",
+    PLAYED_PREVIOUSLY: "PLAYED_PREVIOUSLY",
+    SKIPPED: "SKIPPED",
+    AVAILABLE: "AVAILABLE",
+} as const;
+
+export type CardState = typeof CardState[keyof typeof CardState];
 export type BlackCard = {
     id: string;
     deckId: string;
@@ -145,13 +149,3 @@ export type ClientEmittedEventFunctions = {
 export type ServerEmittedEventFunctions = {
     [K in keyof ServerEmittedEvents]: ServerEmittedEvents[K] extends void ? () => void : (arg: ServerEmittedEvents[K]) => void;
 }
-export type PartialRequire<T extends object, K extends keyof T> = Partial<Omit<T, K>> & Pick<T, K>;
-
-type PartialBlackCard = PartialRequire<BlackCard, "id" | "text" | "pick">;
-type PartialWhiteCard = PartialRequire<WhiteCard, "id" | "text">;
-
-export type PopulatedCardDeck = Omit<PartialRequire<CardDeck, "id" | "name">, "numberOfWhiteCards" | "numberOfBlackCards"> & {
-    blackCards: PartialBlackCard[];
-    whiteCards: PartialWhiteCard[];
-    description: CardDeck["description"];
-};

@@ -1,6 +1,6 @@
 export type User = {
     id: string;
-    username:string;
+    username: string;
     isActive: boolean;
     points: number;
     isCardCzar: boolean;
@@ -27,7 +27,7 @@ export type GameRound = {
     status: RoundStatus;
     winnerId?: string;
     plays: {
-        [key: string]:  WhiteCard[];
+        [key: string]: WhiteCard[];
     }
     votesToSkip: {
         [key: string]: boolean;
@@ -62,7 +62,7 @@ export const DEFAULT_RULES: Rules = {
 }
 
 
-export enum CardState  {
+export enum CardState {
     IN_USE = "IN_USE",
     PLAYED_PREVIOUSLY = "PLAYED_PREVIOUSLY",
     SKIPPED = "SKIPPED",
@@ -147,8 +147,8 @@ export type ServerEmittedEventFunctions = {
 }
 export type PartialRequire<T extends object, K extends keyof T> = Partial<Omit<T, K>> & Pick<T, K>;
 
-type PartialBlackCard = PartialRequire<BlackCard, "id" | "text" | "pick">;
-type PartialWhiteCard = PartialRequire<WhiteCard, "id" | "text">;
+export type PartialBlackCard = PartialRequire<BlackCard, "id" | "text" | "pick">;
+export type PartialWhiteCard = PartialRequire<WhiteCard, "id" | "text">;
 
 export type PopulatedCardDeck = Omit<PartialRequire<CardDeck, "id" | "name">, "numberOfWhiteCards" | "numberOfBlackCards"> & {
     blackCards: PartialBlackCard[];

@@ -1,11 +1,14 @@
-import bodyParser from "body-parser";
-import { Router } from "express";
+import { json, Router } from "express";
 import { CardManager } from "../CardManager";
 import { socketManager } from "../singletons";
 import { importDeck } from "../utils/cardImporter";
 
 const routes = Router();
-routes.use(bodyParser.json());
+
+routes.use(json({
+  limit: "5mb",
+}));
+
 
 routes.use((_, res, next) => {
   res.header("request-id", crypto.randomUUID());
@@ -78,12 +81,49 @@ routes.post("/decks", async (req, res) => {
     res.status(201).json({ deck: newDeck });
   } catch (error) {
     console.log("Error parsing JSON: ", error);
-    res.status(400).json({ error: "Invalid JSON" });
+    res.status(400).json({ error: error.message });
     return;
   }
 });
 
-routes.patch("/decks/:deckId", async (req, res) => {
+routes.get("/decks/:deckId", async (req, res) => {
+  try {
+    const deck = await CardManager.fetchPopulatedDeck({
+      id: req.params.deckId,
+    });
+    if (!deck) {
+      res.status(404).json({ error: "Deck not found" });
+      return;
+    }
+    res.json(deck);
+  } catch (error) {
+    console.error("Error in /decks/:deckId route:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+routes.post("/decks/import", async (req, res) => {
+  if (!req.body || typeof req.body !== "object" || !req.body.deckId) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+  try {
+    let id = req.body.importedDeckId;
+    if (!id || typeof id !== "string" || !id.startsWith("CAH-")) {
+      throw new Error("Invalid imported deck ID");
+    }
+    const deck = await importDeck(id);
+    res.json({ deck });
+  }
+  catch (error) {
+    const message =
+      error instanceof Error && error.message ? error.message : "Failed to import deck";
+
+    res.status(500).json({ error: message });
+  }
+});
+
+routes.post("/decks/:deckId", async (req, res) => {
   try {
     const updatedDeck = await CardManager.updateDeck({
       id: req.params.deckId,
@@ -99,6 +139,19 @@ routes.patch("/decks/:deckId", async (req, res) => {
     console.log("Error parsing JSON: ", error);
     res.status(400).json({ error: "Invalid JSON" });
     return;
+  }
+});
+routes.delete("/decks/:deckId", async (req, res) => {
+  try {
+    const success = await CardManager.deleteDeck(req.params.deckId);
+    if (!success) {
+      res.status(404).json({ error: "Deck not found" });
+      return;
+    }
+    res.status(204).send();
+  } catch (error) {
+    console.error("Error in DELETE /decks/:deckId route:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

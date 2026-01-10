@@ -145,3 +145,13 @@ export type ClientEmittedEventFunctions = {
 export type ServerEmittedEventFunctions = {
     [K in keyof ServerEmittedEvents]: ServerEmittedEvents[K] extends void ? () => void : (arg: ServerEmittedEvents[K]) => void;
 }
+export type PartialRequire<T extends object, K extends keyof T> = Partial<Omit<T, K>> & Pick<T, K>;
+
+type PartialBlackCard = PartialRequire<BlackCard, "id" | "text" | "pick">;
+type PartialWhiteCard = PartialRequire<WhiteCard, "id" | "text">;
+
+export type PopulatedCardDeck = Omit<PartialRequire<CardDeck, "id" | "name">, "numberOfWhiteCards" | "numberOfBlackCards"> & {
+    blackCards: PartialBlackCard[];
+    whiteCards: PartialWhiteCard[];
+    description: CardDeck["description"];
+};

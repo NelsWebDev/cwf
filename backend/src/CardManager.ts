@@ -1,6 +1,6 @@
-import { BlackCard, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prismaClient } from "./singletons";
-import { CardDeck, CardState, WhiteCard } from "./types";
+import { CardDeck, CardState, PopulatedCardDeck, WhiteCard } from "./types";
 
 export const deckInclude: Prisma.DeckInclude = {
   _count: {
@@ -11,25 +11,11 @@ export const deckInclude: Prisma.DeckInclude = {
   },
 };
 
-type PopulatedDeck = Prisma.DeckGetPayload<{
-  include: typeof deckInclude;
-}>;
 
-type UpdateDeckProps = {
-  id: string;
-} & Partial<{
-  name: string;
-  description: string;
-  whiteCards: {
-    id?: WhiteCard['id'],
-    text: WhiteCard['text'],
-  }[];
-  blackCards: {
-    id?: BlackCard['id'],
-    text: BlackCard['text'],
-    pick: BlackCard['pick'],
-  }[];
-}>
+
+
+
+
 
 export class CardManager {
   static async fetchAllDecks(): Promise<CardDeck[]> {
@@ -49,61 +35,90 @@ export class CardManager {
     });
     return CardManager.deckFromPrismaQuery(newDeck);
   }
-  static async deleteDeck(deckId: string): Promise<void> {
-    await prismaClient.deck.delete({
+  static async deleteDeck(deckId: string): Promise<CardDeck | undefined> {
+    return prismaClient.deck.delete({
       where: {
         id: deckId,
       },
-    });
+      include: deckInclude,
+    }).then((deck) => deck ? CardManager.deckFromPrismaQuery(deck) : undefined);
   }
 
-  static async updateDeck(props: UpdateDeckProps): Promise<CardDeck | undefined> {
-    const { id, name, description, whiteCards, blackCards } = props;
-    const existingDeck = await prismaClient.deck.findUnique({
-      where: { id },
-    });
-    if (!existingDeck) {
-      return undefined;
-    }
 
-    const updatedDeck = await prismaClient.deck.update({
-      where: { id },
+  static async updateDeck(props: PopulatedCardDeck): Promise<PopulatedCardDeck> {
+    const { id, name, description } = props;
+    const idsOfWhiteCards = props.whiteCards.map((card) => card.id);
+    const idsOfBlackCards = props.blackCards.map((card) => card.id);
+
+
+    await prismaClient.deck.update({
+      where: {
+        id,
+      },
       data: {
-        name: name ?? undefined,
-        description: description ?? undefined,
-        whiteCards: whiteCards ? {
-          upsert: whiteCards.map((card) => ({
-            where: { id: card.id || '' },
+        name,
+        description,
+        whiteCards: {
+          deleteMany: {
+            id: {
+              notIn: idsOfWhiteCards,
+            },
+          },
+          upsert: props.whiteCards.map((card) => ({
+            where: { id: card.id },
             create: {
               text: card.text,
-              state: CardState.AVAILABLE,
             },
             update: {
               text: card.text,
             },
           })),
-        } : undefined,
-        blackCards: blackCards ? {
-          upsert: blackCards.map((card) => ({
-            where: { id: card.id || undefined },
+        },
+        blackCards: {
+          deleteMany: {
+            id: {
+              notIn: idsOfBlackCards,
+            },
+          },
+          upsert: props.blackCards.map((card) => ({
+            where: { id: card.id },
             create: {
+              id: card.id || undefined,
               text: card.text,
               pick: card.pick,
             },
             update: {
-              text: card.text,
               pick: card.pick,
+              state: card.state,
             },
           })),
-        } : undefined,
+        },
       },
       include: deckInclude,
     });
 
-    return CardManager.deckFromPrismaQuery(updatedDeck);
+    return CardManager.getPopulatedDeck(props.id);
+
   }
 
-  public static deckFromPrismaQuery(deck: PopulatedDeck): CardDeck {
+  public static async getPopulatedDeck(id: string): Promise<PopulatedCardDeck> {
+    const deck = await prismaClient.deck.findFirst({
+      where: { id },
+      include: {
+        blackCards: true,
+        whiteCards: true,
+      },
+    });
+    const { blackCards, whiteCards, ...rest } = deck;
+    return {
+      ...rest,
+      blackCards: blackCards,
+      whiteCards: whiteCards,
+    }
+  }
+
+
+  public static deckFromPrismaQuery(deck: Prisma.DeckGetPayload<{ include: typeof deckInclude }>): CardDeck {
     const {
       _count: { blackCards, whiteCards },
       description,
@@ -124,6 +139,21 @@ export class CardManager {
     });
     return query ? CardManager.deckFromPrismaQuery(query) : null;
   }
+
+  public static async fetchPopulatedDeck(where: Prisma.DeckWhereInput): Promise<PopulatedCardDeck | undefined> {
+    const deck = await prismaClient.deck.findFirst({
+      where,
+      include: {
+        blackCards: true,
+        whiteCards: true,
+      },
+    });
+    if (!deck) {
+      return;
+    }
+    return deck as PopulatedCardDeck;
+  }
+
   static async deckExists(deckId: string) {
     return prismaClient.deck
       .findUnique({
