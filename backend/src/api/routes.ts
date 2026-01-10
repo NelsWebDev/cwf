@@ -11,7 +11,7 @@ routes.use(json({
 
 
 routes.use((_, res, next) => {
-  res.header("request-id", crypto.randomUUID());
+  res.header("RequestID", crypto.randomUUID());
   next();
 });
 

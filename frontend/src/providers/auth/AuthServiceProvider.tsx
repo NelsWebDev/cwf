@@ -16,24 +16,25 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
     }), []);
     const [disconnected, setDisconnected] = useState(false);
 
-    useEffect(() => {
-        fetch(import.meta.env.VITE_API_URL + "/health").then(async (res) => {
-            if (!res.headers.has("request-id")) {
-                throw new Error("Request didn't come from the app");
-            }
-            if (!res.ok) {
-                throw new Error("API is not healthy");
-            }
-        }).catch((e) => {
-            if (import.meta.env.PROD) {
-                window.location.href = import.meta.env.VITE_API_URL as string;
-                return;
-            }
-            const message = e.message ? (e.message as string).includes("Failed to fetch") ? "Backend down" : e.message : "Failed to connect to API";
-            setErrorMessage(message);
-            console.log(e);
-        });
-    }, []);
+    // useEffect(() => {
+    //     fetch(import.meta.env.VITE_API_URL + "/health").then(async (res) => {
+    //         alert(res.headers.get("RequestID"));
+    //         if (!res.headers.has("RequestID")) {
+    //             throw new Error("Request didn't come from the app");
+    //         }
+    //         if (!res.ok) {
+    //             throw new Error("API is not healthy");
+    //         }
+    //     }).catch((e) => {
+    //         if (import.meta.env.PROD) {
+    //             window.location.href = import.meta.env.VITE_API_URL as string;
+    //             return;
+    //         }
+    //         const message = e.message ? (e.message as string).includes("Failed to fetch") ? "Backend down" : e.message : "Failed to connect to API";
+    //         setErrorMessage(message);
+    //         console.log(e);
+    //     });
+    // }, []);
 
     useEffect(() => {
         if (user?.id) {
