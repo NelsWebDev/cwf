@@ -8,7 +8,7 @@ import type { CardDeck } from "../types";
 
 const getDecks = async () => {
     try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/decks`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/decks?include=custom`);
         return await res.json() as Promise<CardDeck[]>;
     }
     catch (error) {

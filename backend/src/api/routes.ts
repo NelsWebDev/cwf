@@ -67,7 +67,7 @@ routes.post("/login", async ({ body }, res) => {
 
 routes.get("/decks", async (req, res) => {
   try {
-    const decks = await CardManager.fetchAllDecks();
+    const decks = await CardManager.fetchDecks(req.query.include as 'all' | 'custom' | 'original' || 'all');
     res.json(decks);
   } catch (error) {
     console.error("Error in /decks route:", error);

@@ -18,8 +18,24 @@ export const deckInclude: Prisma.DeckInclude = {
 
 
 export class CardManager {
-  static async fetchAllDecks(): Promise<CardDeck[]> {
+  static async fetchDecks(include: 'all' | 'custom' | 'original' = 'all'): Promise<CardDeck[]> {
     const decks = await prismaClient.deck.findMany({
+      where: include === "original" ? {
+        importedDeckId: {
+          startsWith: "CAH-",
+        }
+      } : include === 'custom' ? {
+        OR: [
+          { importedDeckId: null },
+          {
+            importedDeckId: {
+              not: {
+                startsWith: "CAH-",
+              }
+            }
+          }
+        ]
+      } : {},
       include: deckInclude,
     });
     return decks.map(CardManager.deckFromPrismaQuery);
