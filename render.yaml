@@ -16,6 +16,10 @@ services:
     rootDir: frontend
     buildCommand: yarn install && yarn build
     staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /:any
+        destination: /
   - type: cron
     dockerContext: db-backup
     name: db-weekly-backup
