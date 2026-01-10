@@ -1,77 +1,108 @@
-import { useState } from "react";
+import {
+  Button,
+  Center,
+  Paper,
+  PasswordInput,
+  Stack,
+  Text,
+  TextInput,
+  Title,
+} from "@mantine/core";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+
 import { useAuth } from "../../hooks/useAuth";
-import { Button, Center, Container, Paper, PasswordInput, Text, TextInput, Title } from "@mantine/core";
-import ThemeSelector from "../../components/ThemeSelector";
 
+export default function LoginPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
 
+  const {
+    login,
+    isAuthenticated,
+    isAuthenticating,
+    disconnected,
+    reconnect,
+    errorMessage,
+  } = useAuth();
 
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
-const LoginPage = () => {
-  const [usernameInput, setUsernameInput] = useState(import.meta.env.VITE_AUTOFILL_USERNAME || '');
-  const [passwordInput, setPasswordInput] = useState(import.meta.env.VITE_AUTOFILL_PASSWORD || '');
-  const { login, errorMessage, isAuthenticated, disconnected, reconnect } = useAuth();
+  // Where the user was trying to go before redirecting to /login
+  const from =
+    (location.state as { from?: { pathname: string } })?.from?.pathname || "/";
 
-  if (localStorage.getItem('authToken') && !isAuthenticated && !errorMessage) {
-    return <h4>Loading....</h4>
-  }
+  // Once authenticated, redirect back
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, from, navigate]);
+
+  const handleLogin = async () => {
+    if (!username.trim() || !password.trim()) return;
+    await login(username.trim(), password);
+  };
 
   return (
-    <Container size={420} my={40}>
-      <Title ta="center" style={{
-        fontFamily: 'Greycliff CF, sans-serif var(--mantine-font-family)',
-        fontWeight: 900,
-        color: 'light-dark(black, var(--mantine-color-white))',
-      }}>
-        Welcome Back Bitches!
-      </Title>
-      <Paper withBorder shadow="md" p={30} mt={30} radius="md" styles={{
-        root: {
-          backgroundColor: 'light-dark(var(--mantine-color-white), var(--mantine-color-dark-3))',
-        }
-      }}>
-        {errorMessage && (
-          <Text size="sm" mb="md"
-            style={{ textAlign: 'center', color: 'light-dark(var(--mantine-color-red-8), var(--mantine-color-red-3))' }}>
-            {errorMessage !== "invalid" && errorMessage}
-            {errorMessage == "invalid" && (<iframe src="https://youtube.com/embed/ukznXQ3MgN0?autoplay=1&start=12&mute=0"
-              style={{ width: '226px', height: '400px', border: 'none', marginTop: '10px' }}
-              title="Error Video"
-            ></iframe>)}
-          </Text>)}
-        {(!disconnected || errorMessage === "You are logged out") && (<><TextInput label="Name"
-          styles={{ label: { color: 'light-dark(var(--mantine-color-dark-9), var(--mantine-color-white))' } }}
-          placeholder="Your Name" required onChange={e => setUsernameInput(e.currentTarget.value)} value={usernameInput} />
-          <PasswordInput label="Password" placeholder="Game password" required mt="md"
-            styles={{ label: { color: 'light-dark(var(--mantine-color-dark-9), var(--mantine-color-white))' } }}
-            onChange={e => setPasswordInput(e.currentTarget.value)} value={passwordInput} />
-
-          <Button fullWidth mt="xl" onClick={() => login(usernameInput, passwordInput)}>
+    <Center style={{ minHeight: "100vh" }}>
+      <Paper shadow="md" p="lg" radius="md" w={360}>
+        <Stack>
+          <Title order={3} ta="center">
             Sign in
-          </Button></>)}
-        {disconnected && errorMessage != "You are logged out" && (
-          <Button fullWidth mt="xl" onClick={() => reconnect()}>Rejoin</Button>
-        )}
+          </Title>
+
+          {disconnected && (
+            <>
+              <Text c="red" size="sm" ta="center">
+                Lost connection to server
+              </Text>
+              <Button variant="light" onClick={reconnect}>
+                Reconnect
+              </Button>
+            </>
+          )}
+
+          {!disconnected && (
+            <>
+              <TextInput
+                label="Username"
+                placeholder="Enter your name"
+                value={username}
+                onChange={(e) => setUsername(e.currentTarget.value)}
+                disabled={isAuthenticating}
+              />
+
+              <PasswordInput
+                label="Password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.currentTarget.value)}
+                disabled={isAuthenticating}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleLogin();
+                }}
+              />
+
+              {errorMessage && (
+                <Text c="red" size="sm">
+                  {errorMessage}
+                </Text>
+              )}
+
+              <Button
+                onClick={handleLogin}
+                loading={isAuthenticating}
+                disabled={!username.trim() || !password.trim()}
+                fullWidth
+              >
+                Log in
+              </Button>
+            </>
+          )}
+        </Stack>
       </Paper>
-      <Center>
-        <ThemeSelector
-          mt="xl"
-          leftSection={null}
-          searchValue="Select Theme"
-          styles={{
-            root: {
-              width: "140px",
-            },
-            input: {
-              backgroundColor: 'light-dark(var(--mantine-color-blue-5), var(--mantine-color-dark-4))',
-            }
-          }}
-        />
-      </Center>
-    </Container>
-
-
-  )
-
+    </Center>
+  );
 }
-
-export default LoginPage;

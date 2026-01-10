@@ -1,9 +1,10 @@
-import { Dispatch, ReactElement, SetStateAction, useEffect, useMemo, useState } from "react";
-import { CardDeck, DEFAULT_RULES, GameRound, GameService, RoundStatus, Rules, User, WhiteCard } from "../types";
-import { useAuth, useModal } from "../hooks";
 import { Button, Input, Stack, Text } from "@mantine/core";
-import { GameServiceContext } from "./Contexts";
+import { useModals } from "@mantine/modals";
+import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
+import { useAuth } from "../hooks";
+import { CardDeck, DEFAULT_RULES, GameRound, GameService, RoundStatus, Rules, User, WhiteCard } from "../types";
 import { isURL } from "../utils";
+import { GameServiceContext } from "./Contexts";
 
 
 
@@ -28,7 +29,6 @@ type CustomCardModalProps = {
 const CustomCardModal = ({ setSelectedWhiteCard, setPlayedCards, selectedWhiteCard }: CustomCardModalProps) => {
 
     const [text, setText] = useState<string>("");
-    const { closeModal } = useModal();
 
 
 
@@ -36,7 +36,6 @@ const CustomCardModal = ({ setSelectedWhiteCard, setPlayedCards, selectedWhiteCa
         let txt = text.trim();
         if (!txt) {
             setSelectedWhiteCard(undefined);
-            closeModal();
             return;
         }
 
@@ -46,7 +45,6 @@ const CustomCardModal = ({ setSelectedWhiteCard, setPlayedCards, selectedWhiteCa
         selectedWhiteCard.text = txt;
         setPlayedCards((prev) => [...prev, selectedWhiteCard]);
         setSelectedWhiteCard(undefined);
-        closeModal();
     }
 
     return (
@@ -62,7 +60,7 @@ const CustomCardModal = ({ setSelectedWhiteCard, setPlayedCards, selectedWhiteCa
 }
 
 
-const GameServiceProvider = ({ children }: { children: ReactElement }) => {
+const GameServiceProvider = ({ children }: { children: React.ReactElement }) => {
 
     const { socket, user } = useAuth();
 
@@ -75,7 +73,7 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
     const [addDeckError, setAddDeckError] = useState<string | undefined>(undefined);
     const [addedDeck, setAddedDeck] = useState<CardDeck | undefined>(undefined);
     const [allDecks, setAllDecks] = useState<CardDeck[]>([]);
-    const { showModal } = useModal();
+    const modals = useModals();
     const [playedCards, setPlayedCards] = useState<WhiteCard[]>([]);
 
     const gameStarted = useMemo(() => !!currentRound, [currentRound]);
@@ -83,30 +81,32 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
 
     const playSelectedCard = () => {
         if (!selectedWhiteCard) {
-            showModal({ title: "No card selected", message: "Please select a card to play", autoclose: 3_000 });
+            const modal = modals.openModal({ title: "No card selected", children: "Please select a card to play" });
+            setTimeout(() => modals.closeModal(modal), 3_000);
             return;
         }
 
         if (currentRound?.status !== RoundStatus.WAITING_FOR_PLAYERS) {
-            showModal({ title: "Game not in play", message: "You can't play a card right now", autoclose: 3_000 });
+            const modal = modals.openModal({ title: "Game not in play", children: "You can't play a card right now" });
+            setTimeout(() => modals.closeModal(modal), 3_000);
             return;
         }
 
         if (currentRound?.cardCzarId === user?.id) {
-            showModal({ title: "Card czar can't play", message: "You can't play a card as the card czar", autoclose: 3_000 });
+            const modal = modals.openModal({ title: "Card czar can't play", children: "You can't play a card as the card czar" });
+            setTimeout(() => modals.closeModal(modal), 3_000);
             return;
         }
 
         if (selectedWhiteCard.isCustom) {
-            showModal({
+            modals.openModal({
                 title: "Custom card",
-                message: "",
-                element: <CustomCardModal
+                children: <CustomCardModal
                     selectedWhiteCard={selectedWhiteCard}
                     setPlayedCards={setPlayedCards}
                     setSelectedWhiteCard={setSelectedWhiteCard}
                 />,
-                canClose: true,
+                closeOnEscape: true,
             });
         } else {
             setPlayedCards(prev => [...prev, selectedWhiteCard]);
@@ -163,11 +163,19 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
         socket.on("gameEnded", (username) => {
             setSelectedWhiteCard(undefined);
             setMyHand([]);
-            showModal({ title: "Game ended", message: "The game has ended" + (username ? ` and ${username} won` : ""), element: <></>, autoclose: 3_000 });
+            const modal = modals.openModal({ title: "Game ended", children: <p>The game has ended" + (username ? ` and ${username} won` : "")</p> });
+            setTimeout(() => modals.closeModal(modal), 3_000);
         });
 
         socket.on("holdGame", () => {
-            showModal({ title: "Game on hold", element: <NotEnoughPlayers endGame={endGame} />, canClose: false });
+            modals.closeAll();
+            modals.openModal({
+                title: "Game on hold",
+                children: <NotEnoughPlayers endGame={endGame} />,
+                withCloseButton: false,
+                closeOnEscape: false,
+                closeOnClickOutside: false,
+            })
         });
 
         socket.on("winnerSelected", (czarId) => {
@@ -214,7 +222,8 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
 
     const startGame = () => {
         if (gameStarted) {
-            showModal({ title: "Game already started", message: "You can't start the game again", autoclose: 3_000 });
+            const modal = modals.openModal({ title: "Game already started", children: "You can't start the game again" });
+            setTimeout(() => modals.closeModal(modal), 3_000);
             return;
         }
         const numberOfBlackCards = cardDecks.reduce((acc, deck) => acc + deck.numberOfBlackCards, 0);
@@ -222,7 +231,8 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
         const minBlackCards = (players.length * rules.pointsToWin) - 1;
         const minWhiteCards = (players.length * rules.pointsToWin) - 1 + (players.length * 10);
         if (numberOfBlackCards < minBlackCards || numberOfWhiteCards < minWhiteCards) {
-            showModal({ title: "Not enough cards", message: `You need at least ${minBlackCards} black cards and ${minWhiteCards} white cards to start the game`, autoclose: 5_000 });
+            const modal = modals.openModal({ title: "Not enough cards", children: `You need at least ${minBlackCards} black cards and ${minWhiteCards} white cards to start the game` });
+            setTimeout(() => modals.closeModal(modal), 5_000);
             return;
         }
 
@@ -231,7 +241,8 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
 
     const importDeck = (deckId: string) => {
         if (!deckId) {
-            setAddDeckError("Please enter a deck ID");
+            const modal = modals.openModal({ title: "No deck ID", children: "Please enter a deck ID" });
+            setTimeout(() => modals.closeModal(modal), 3_000);
             return;
         }
         setAddedDeck(undefined);
@@ -305,7 +316,8 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
                 });
             }
             else {
-                showModal({ title: "Error", message: "Failed to fetch decks", autoclose: 3_000 });
+                const modal = modals.openModal({ title: "Error", children: "Failed to fetch decks" });
+                setTimeout(() => modals.closeModal(modal), 3_000);
             }
         });
     }, [])

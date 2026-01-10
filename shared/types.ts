@@ -147,8 +147,8 @@ export type ServerEmittedEventFunctions = {
 }
 export type PartialRequire<T extends object, K extends keyof T> = Partial<Omit<T, K>> & Pick<T, K>;
 
-type PartialBlackCard = PartialRequire<BlackCard, "id" | "text" | "pick">;
-type PartialWhiteCard = PartialRequire<WhiteCard, "id" | "text">;
+export type PartialBlackCard = PartialRequire<BlackCard, "id" | "text" | "pick">;
+export type PartialWhiteCard = PartialRequire<WhiteCard, "id" | "text">;
 
 export type PopulatedCardDeck = Omit<PartialRequire<CardDeck, "id" | "name">, "numberOfWhiteCards" | "numberOfBlackCards"> & {
     blackCards: PartialBlackCard[];

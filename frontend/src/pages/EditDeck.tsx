@@ -10,8 +10,9 @@ import {
     TextInput,
     Title,
 } from "@mantine/core";
+import { useModals } from "@mantine/modals";
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import type {
     PartialBlackCard as BlackCard,
     PopulatedCardDeck as PopulatedDeck,
@@ -208,6 +209,8 @@ const BlackCardItem = memo(function BlackCardItem({
 
 export const EditDeck = () => {
     const { deckId } = useParams<{ deckId: string }>();
+    const navigate = useNavigate();
+    const modals = useModals();
 
     const [deck, setDeck] = useState<PopulatedDeck>();
     const [whiteSlots, setWhiteSlots] = useState<Slot<WhiteCard>[]>([]);
@@ -417,12 +420,24 @@ export const EditDeck = () => {
                 if (!res.ok) throw new Error(`Failed to save deck: ${res.statusText}`);
                 return res.json();
             })
-            .then((updatedDeck: PopulatedDeck) => {
-                console.log("Deck saved:", updatedDeck);
-                // setDeck(updatedDeck);
-                // setWhiteSlots(updatedDeck.whiteCards);
-                // setBlackSlots(updatedDeck.blackCards);
-                alert("Deck saved successfully.");
+            .then(() => {
+                const modal = modals.openModal({
+                    title: "Deck saved",
+                    children: (
+                        <Text>The deck has been successfully saved.</Text>
+                    ),
+                    centered: true,
+                    size: "sm",
+                    closeOnEscape: true,
+                    onClose() {
+                        navigate(`/decks/`);
+                    },
+                    withCloseButton: true,
+                    closeOnClickOutside: true,
+                });
+                setTimeout(() => {
+                    modals.closeModal(modal);
+                }, 2_000);
             })
             .catch((err) => {
                 console.error(err);

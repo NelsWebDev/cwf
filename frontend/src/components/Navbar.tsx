@@ -1,8 +1,9 @@
-import { IconCardsFilled, IconLogout,  IconSettingsFilled, IconStar } from '@tabler/icons-react';
 import { Button, Container, CSSProperties, Group, Modal } from '@mantine/core';
+import { IconCardsFilled, IconLogout, IconSettingsFilled, IconStar } from '@tabler/icons-react';
+import { useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth, useGame } from '../hooks';
 import SettingsPane from './SettingsPane';
-import { useState } from 'react';
 import ThemeSelector from './ThemeSelector';
 
 const navButtonStyle: CSSProperties = {
@@ -12,6 +13,7 @@ const navButtonStyle: CSSProperties = {
 
 export function HeaderMenu() {
   const { gameStarted, startGame, endGame } = useGame();
+  const navigate = useNavigate();
   const [opened, setOpened] = useState(false);
   const { logout } = useAuth();
   const show = () => setOpened(true);
@@ -36,7 +38,7 @@ export function HeaderMenu() {
             justifyContent: "space-between",
             alignItems: "center",
           }}>
-            <span id="logo" style={{ color: "white" }}>Cards With Friends</span>
+            <NavLink to="/" style={{ textDecoration: "none" }}><span id="logo" style={{ color: "white" }}>Cards With Friends</span></NavLink>
             <Group gap={5} visibleFrom="sm">
               {!gameStarted && (
                 <Button size="md"
@@ -57,6 +59,11 @@ export function HeaderMenu() {
                 size="md" leftSection={<IconSettingsFilled size={16} />} onClick={show}>
                 Settings
               </Button>
+              <Button
+                style={navButtonStyle}
+                size="md" leftSection={<IconCardsFilled size={16} />} onClick={() => navigate("/decks")}>
+                Decks
+              </Button>     
               <ThemeSelector/>
               <Button size="md" style={navButtonStyle} leftSection={<IconLogout size={16} />} color="red" onClick={logout}>
                 Logout

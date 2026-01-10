@@ -1,9 +1,8 @@
 import { ReactElement, useEffect, useMemo, useState } from "react";
-import { AuthService, LoginResponse, Socket, User } from "../../types";
 import { io } from "socket.io-client";
-import LoginPage from "./LoginPage";
+import { AuthService, Socket, User } from "../../types";
 import { AuthServiceContext } from "../Contexts";
-import { urlIsOK } from "../../utils/urls";
+
 
 
 const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
@@ -18,6 +17,25 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
     const [disconnected, setDisconnected] = useState(false);
 
     useEffect(() => {
+        fetch(import.meta.env.VITE_API_URL + "/health").then(async (res) => {
+            if (!res.headers.has("request-id")) {
+                throw new Error("Request didn't come from the app");
+            }
+            if (!res.ok) {
+                throw new Error("API is not healthy");
+            }
+        }).catch((e) => {
+            if (import.meta.env.PROD) {
+                window.location.href = import.meta.env.VITE_API_URL as string;
+                return;
+            }
+            const message = e.message ? (e.message as string).includes("Failed to fetch") ? "Backend down" : e.message : "Failed to connect to API";
+            setErrorMessage(message);
+            console.log(e);
+        });
+    }, []);
+
+    useEffect(() => {
         if (user?.id) {
             localStorage.setItem("userId", user.id);
         }
@@ -28,10 +46,6 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
         setIsAuthenticating(true);
         setErrorMessage("");
 
-        const ok = await urlIsOK(import.meta.env.VITE_API_URL + "/health", 2_000);
-        if (!ok) {
-            window.location.href = import.meta.env.VITE_API_URL as string;
-        }
         try {
             const res = await fetch(import.meta.env.VITE_API_URL + "/login", {
                 method: "POST",
@@ -40,19 +54,18 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
                 },
                 body: JSON.stringify({ username, password }),
             });
-            if (res.status === 200) {
-                const data: LoginResponse = await res.json();
-                setUser(data.user);
-                socket.auth = { userId: data.user?.id };
+            const json = await res.json();
+            if (res.ok) {
+                setUser(json.user);
+                socket.auth = { userId: json.user?.id };
                 socket.connect();
             } else {
-                const data = await res.json();
-                setErrorMessage(data.error);
+                setErrorMessage(json.error);
                 setIsAuthenticated(false);
                 setIsAuthenticating(false);
             }
         }
-        catch {
+        catch (error) {
             setIsAuthenticated(false);
             setIsAuthenticating(false);
             if (!navigator.onLine) {
@@ -129,7 +142,7 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
     }
     return (
         <AuthServiceContext.Provider value={value}>
-            {isAuthenticated ? children : <LoginPage />}
+            {children}
         </AuthServiceContext.Provider>
     )
 }

@@ -1,4 +1,4 @@
-import { Alert, Button, Input, Table, Textarea, } from "@mantine/core";
+import { Alert, Button, Container, Input, Modal, Table, Textarea, } from "@mantine/core";
 import { Form, useForm } from "@mantine/form";
 import { modals, useModals } from "@mantine/modals";
 import { IconTrashFilled } from "@tabler/icons-react";
@@ -17,7 +17,7 @@ const getDecks = async () => {
     }
 }
 
-const CreateModal = ({ decks }: { decks: CardDeck[] }) => {
+const CreateModal = ({ decks, opened, setOpened }: { decks: CardDeck[], opened: boolean, setOpened: React.Dispatch<React.SetStateAction<boolean>> }) => {
     const navigate = useNavigate();
     const createModalReq = useMemo(() => async (values: { name: string; description: string }) => {
         try {
@@ -49,7 +49,7 @@ const CreateModal = ({ decks }: { decks: CardDeck[] }) => {
     });
 
     return (
-        <>
+        <Modal opened={opened} onClose={() => setOpened(false)} title="Create New Deck" centered>
             {Object.entries(form.errors).length > 0 && (
                 <Alert itemType="error" my="md"> {
                     Object.entries(form.errors).map(([field, error]) => (
@@ -96,7 +96,7 @@ const CreateModal = ({ decks }: { decks: CardDeck[] }) => {
                     Create Deck
                 </Button>
             </Form>
-        </>
+        </Modal>
     )
 }
 
@@ -108,6 +108,8 @@ const CreateModal = ({ decks }: { decks: CardDeck[] }) => {
 export const DecksList = () => {
     const modals = useModals();
     const [decks, setDecks] = useState<CardDeck[]>([]);
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const navigate = useNavigate();
     useEffect(() => {
         getDecks().then(setDecks);
     }, [decks]);
@@ -157,8 +159,8 @@ export const DecksList = () => {
 
     const rows = decks.map((element) => (
         <Table.Tr key={element.id}>
-            <Table.Td>{element.name}</Table.Td>
-            <Table.Td>{element.description}</Table.Td>
+            <Table.Td onClick={() => navigate(`/decks/${element.id}`)}>{element.name}</Table.Td>
+            <Table.Td onClick={() => navigate(`/decks/${element.id}`)}>{element.description}</Table.Td>
             <Table.Td><Link to={`/decks/${element.id}`}>Edit</Link></Table.Td>
             <Table.Td><Button onClick={() => deleteDeck(element.id)} size="compact-sm" color="red"><IconTrashFilled /></Button></Table.Td>
         </Table.Tr>
@@ -168,11 +170,9 @@ export const DecksList = () => {
 
 
     return (
-        <>
-            <Button mb="md" onClick={() => modals.openModal({
-                title: 'Create New Deck',
-                children: <CreateModal decks={decks} />,
-            })}>
+        <Container>
+            <CreateModal decks={decks} opened={showCreateModal} setOpened={setShowCreateModal} />
+            <Button mb="md" onClick={() => setShowCreateModal(true)}>
                 Create New Deck
             </Button>
             <Table>
@@ -186,6 +186,6 @@ export const DecksList = () => {
                 <Table.Tbody>{rows}</Table.Tbody>
             </Table>
 
-        </>
+        </Container>
     )
 }
