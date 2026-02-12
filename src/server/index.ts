@@ -1,11 +1,21 @@
 import cors from "cors";
 import { config as loadEnv } from "dotenv";
+import { static as expressStatic } from "express";
+import path from "path";
 import ViteExpress from "vite-express";
 import ApiRouter from "./api/routes";
-import { express, httpServer, ioServer, prismaClient, socketManager } from "./singletons";
+import { express, httpServer, ioServer, prismaClient, socketManager, } from "./singletons";
 loadEnv();
 const HTTP_PORT = process.env.PORT || 3000;
-ViteExpress.bind(express, httpServer);
+const isInHostinger = !!process.env.HOSTINGER
+if (isInHostinger) {
+  const dir = path.join(__dirname, "../public_html");
+  console.log(`Serving static files from ${dir}`);
+  express.use(expressStatic(dir));
+}
+else {
+  ViteExpress.bind(express, httpServer);
+}
 
 httpServer.listen(HTTP_PORT, () => {
   console.log(
