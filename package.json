@@ -6,8 +6,11 @@
   "scripts": {
     "install": "prisma generate",
     "dev": "nodemon -w src/server -x tsx src/server/index.ts",
-    "start": "NODE_ENV=production tsx src/server/index.ts",
-    "build": "vite build",
+    "start": "NODE_ENV=production node dist/server/index.js",
+    "build": "yarn build:server && yarn build:client",
+    "build:client": "vite build",
+    "build:server": "tsc -p tsconfig.server.json --noCheck",
+    "start:server": "node dist/server/index.js",
     "import:cah": "tsx src/server/scripts/cahImporter.ts",
     "import:custom": "tsx src/server/scripts/reimportCustomDecks.ts",
     "import:update": "tsx src/server/scripts/updateDecks.ts"
