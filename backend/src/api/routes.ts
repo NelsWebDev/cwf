@@ -90,10 +90,6 @@ routes.post("/decks/import", async (req, res) => {
   }
 });
 
-routes.get("/health", async (req, res) => {
-  console.log("Health check received");
-  res.sendStatus(200);
-});
 
 routes.get("/", async (_, res) => {
   res.redirect(process.env.FRONTEND_URL);

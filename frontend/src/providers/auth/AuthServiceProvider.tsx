@@ -1,9 +1,8 @@
 import { ReactElement, useEffect, useMemo, useState } from "react";
-import { AuthService, LoginResponse, Socket, User } from "../../types";
 import { io } from "socket.io-client";
-import LoginPage from "./LoginPage";
+import { AuthService, LoginResponse, Socket, User } from "../../types";
 import { AuthServiceContext } from "../Contexts";
-import { urlIsOK } from "../../utils/urls";
+import LoginPage from "./LoginPage";
 
 
 const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
@@ -27,13 +26,8 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
     const login = async (username: string, password: string) => {
         setIsAuthenticating(true);
         setErrorMessage("");
-
-        const ok = await urlIsOK(import.meta.env.VITE_API_URL + "/health", 2_000);
-        if (!ok) {
-            window.location.href = import.meta.env.VITE_API_URL as string;
-        }
         try {
-            const res = await fetch(import.meta.env.VITE_API_URL + "/login", {
+            const res = await fetch(import.meta.env.VITE_API_URL + "/api/login", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
