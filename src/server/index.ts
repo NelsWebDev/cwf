@@ -10,7 +10,8 @@ const HTTP_PORT = process.env.PORT || 3000;
 const isInHostinger = !!process.env.HOSTINGER
 if (isInHostinger) {
   const dir = path.join(process.cwd(), "dist/public_html");
-  express.use(expressStaticMiddleware(dir, { index: false }));
+  console.log(dir);
+  express.use(expressStaticMiddleware(dir));
 }
 else {
   ViteExpress.bind(express, httpServer);
