@@ -1,6 +1,6 @@
 import cors from "cors";
 import { config as loadEnv } from "dotenv";
-import { static as expressStatic } from "express";
+import { static as expressStaticMiddleware } from "express";
 import path from "path";
 import ViteExpress from "vite-express";
 import ApiRouter from "./api/routes";
@@ -9,9 +9,8 @@ loadEnv();
 const HTTP_PORT = process.env.PORT || 3000;
 const isInHostinger = !!process.env.HOSTINGER
 if (isInHostinger) {
-  const dir = path.join(__dirname, "../public_html");
-  console.log(`Serving static files from ${dir}`);
-  express.use(expressStatic(dir));
+  const dir = path.join(process.cwd(), "dist/public_html");
+  express.use(expressStaticMiddleware(dir, { index: false }));
 }
 else {
   ViteExpress.bind(express, httpServer);
