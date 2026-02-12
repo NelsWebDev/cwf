@@ -1,14 +1,14 @@
-import { useState } from "react";
-import { useAuth } from "../../hooks/useAuth";
 import { Button, Center, Container, Paper, PasswordInput, Text, TextInput, Title } from "@mantine/core";
+import React, { useState } from "react";
 import ThemeSelector from "../../components/ThemeSelector";
+import { useAuth } from "../../hooks/useAuth";
 
 
 
 
 const LoginPage = () => {
-  const [usernameInput, setUsernameInput] = useState(import.meta.env.VITE_AUTOFILL_USERNAME || '');
-  const [passwordInput, setPasswordInput] = useState(import.meta.env.VITE_AUTOFILL_PASSWORD || '');
+  const [usernameInput, setUsernameInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
   const { login, errorMessage, isAuthenticated, disconnected, reconnect } = useAuth();
 
   if (localStorage.getItem('authToken') && !isAuthenticated && !errorMessage) {

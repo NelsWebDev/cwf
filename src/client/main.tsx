@@ -1,11 +1,11 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import App from './App.tsx'
 import { ColorSchemeScript, createTheme, MantineProvider } from '@mantine/core'
-import AuthServiceProvider from './providers/auth/AuthServiceProvider.tsx'
 import "@mantine/core/styles.css"
-import GameServiceProvider from './providers/GameServiceProvider.tsx'
-import ModalServiceProvider from './providers/ModalServiceProvider.tsx'
+import React, { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import App from './App'
+import AuthServiceProvider from './providers/auth/AuthServiceProvider'
+import GameServiceProvider from './providers/GameServiceProvider'
+import ModalServiceProvider from './providers/ModalServiceProvider'
 
 const theme = createTheme({
   fontFamily: 'Roboto, sans-serif',

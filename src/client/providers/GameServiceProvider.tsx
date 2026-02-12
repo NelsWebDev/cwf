@@ -1,5 +1,5 @@
 import { Button, Input, Stack, Text } from "@mantine/core";
-import { Dispatch, ReactElement, SetStateAction, useEffect, useMemo, useState } from "react";
+import React, { Dispatch, ReactElement, SetStateAction, useEffect, useMemo, useState } from "react";
 import { useAuth, useModal } from "../hooks";
 import { CardDeck, DEFAULT_RULES, GameRound, GameService, RoundStatus, Rules, User, WhiteCard } from "../types";
 import { isURL } from "../utils";
@@ -242,7 +242,7 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
         }
 
         setAddDeckError(undefined);
-        fetch(import.meta.env.VITE_API_URL + "/api/decks/import", {
+        fetch("/api/decks/import", {
             method: "POST",
             body: JSON.stringify({
                 deckId: formattedID,
@@ -298,7 +298,7 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
         setPlayedCards([]);
     }, [currentRound?.status]);
     useMemo(() => {
-        fetch(import.meta.env.VITE_API_URL + "/api/decks").then((response) => {
+        fetch("/api/decks").then((response) => {
             if (response.ok) {
                 response.json().then((data: CardDeck[]) => {
                     setAllDecks(data);

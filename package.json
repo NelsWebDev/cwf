@@ -1,14 +1,40 @@
 {
-  "name": "cwf",
-  "version": "1.0.0",
-  "repository": "https://github.com/NelsWebDev/cwf",
-  "author": "Nels Romerdahl <7355705+NelsWebDev@users.noreply.github.com>",
+  "name": "cwf-backend",
+  "version": "0.0.1",
+  "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "build": "yarn --cwd frontend build && yarn --cwd backend build",
-    "start": "yarn --cwd backend start",
-    "install": "yarn --cwd frontend install && yarn --cwd backend install",
-    "f:dev": "yarn --cwd frontend dev",
-    "b:dev": "yarn --cwd backend dev"
+    "install": "yarn prisma generate",
+    "dev": "nodemon -w src/server -x tsx src/server/index.ts",
+    "start": "NODE_ENV=production tsx src/server/index.ts",
+    "build": "vite build",
+    "import:cah": "tsx src/server/scripts/cahImporter.ts",
+    "import:custom": "tsx src/server/scripts/reimportCustomDecks.ts",
+    "import:update": "tsx src/server/scripts/updateDecks.ts"
+  },
+  "dependencies": {
+    "@mantine/core": "^7.17.5",
+    "@mantine/hooks": "^7.17.5",
+    "@prisma/client": "^6.7.0",
+    "@tabler/icons-react": "^3.31.0",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "http": "^0.0.1-security",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.2",
+    "vite-express": "*"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.1",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "nodemon": "^3.1.10",
+    "prisma": "^6.7.0",
+    "vite": "^6.3.5"
   }
 }
