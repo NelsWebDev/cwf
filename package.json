@@ -6,7 +6,7 @@
   "scripts": {
     "install": "prisma generate",
     "dev": "nodemon -w src/server -x tsx src/server/index.ts",
-    "start": "HOSTINGER=true node dist/server/index.js",
+    "start": "node dist/server/index.js",
     "start:local": "node dist/server/index.js",
     "env": "HOSTINGER=true node -e \"console.log('HOSTINGER?', !!process.env.HOSTINGER)\"",
     "build": "npm run env && npm run build:server && npm run build:client",

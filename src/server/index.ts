@@ -6,7 +6,7 @@ import ViteExpress from "vite-express";
 import ApiRouter from "./api/routes";
 import { express, httpServer, ioServer, prismaClient, socketManager, } from "./singletons";
 loadEnv();
-const HTTP_PORT = process.env.PORT || 3000;
+const HTTP_PORT = Number(process.env.PORT || 3000);
 const isInHostinger = !!process.env.HOSTINGER
 if (isInHostinger) {
   const dir = path.join(process.cwd(), "dist/public_html");
@@ -36,6 +36,11 @@ express.get("/health", async (_, res) => {
   res.sendStatus(200);
 });
 
+if (isInHostinger) {
+  express.get("/:path", (req, res) => {
+    res.sendFile(path.join(process.cwd(), "dist/public_html/index.html"));
+  });
+}
 ioServer.use(socketManager.middleware);
 
 ioServer.on("connection", (socket) => {
