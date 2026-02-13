@@ -9,7 +9,7 @@
     "start": "node dist/server/index.js",
     "start:local": "node dist/server/index.js",
     "env": "HOSTINGER=true node -e \"console.log('HOSTINGER?', !!process.env.HOSTINGER)\"",
-    "build": "npm run env && npm run build:server && npm run build:client",
+    "build:local": "npm run env && npm run build:server && npm run build:client",
     "build:client": "vite build",
     "build:server": "tsc -p tsconfig.server.json --noCheck",
     "start:server": "node dist/server/index.js",
