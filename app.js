@@ -34,7 +34,7 @@ filesToMove.forEach((file) => {
 const htaccessPath = path.join(process.cwd(), '.htaccess');
 if (fs.existsSync(htaccessPath)) {
     const htaccessFile = fs.readFileSync(htaccessPath, 'utf-8');
-    const newHtaccessFile = htaccessFile.replace("/public_html", "").replace("app.js", "start.js");
+    const newHtaccessFile = htaccessFile.replace("/public_html", "").replace("app.js", "dist/server/index.js");
     fs.writeFileSync(htaccessPath, newHtaccessFile);
 }
 
