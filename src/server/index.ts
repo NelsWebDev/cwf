@@ -9,8 +9,7 @@ loadEnv();
 const HTTP_PORT = Number(process.env.PORT || 3000);
 const isInHostinger = !!process.env.HOSTINGER
 if (isInHostinger) {
-  const dir = path.join(process.cwd(), "dist/public_html");
-  console.log(dir);
+  const dir = path.join(process.cwd(), "dist/public");
   express.use(expressStaticMiddleware(dir));
 }
 else {
