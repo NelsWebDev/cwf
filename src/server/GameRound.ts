@@ -2,12 +2,11 @@ import { GameUser } from "./session/GameUser";
 import { game, ioServer, socketManager } from "./singletons";
 import {
   BlackCard,
+  CardState,
+  RoundStatus,
   GameRound as TGameGround,
   WhiteCard,
-  RoundStatus,
-  CardState,
 } from "./types";
-
 export class GameRound implements TGameGround {
   public readonly id: string;
   status: RoundStatus = RoundStatus.WAITING_FOR_PLAYERS;

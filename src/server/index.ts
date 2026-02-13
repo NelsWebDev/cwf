@@ -1,20 +1,11 @@
 import cors from "cors";
 import { config as loadEnv } from "dotenv";
-import { static as expressStaticMiddleware } from "express";
-import path from "path";
 import ViteExpress from "vite-express";
 import ApiRouter from "./api/routes";
 import { express, httpServer, ioServer, prismaClient, socketManager, } from "./singletons";
 loadEnv();
 const HTTP_PORT = Number(process.env.PORT || 3000);
-const isInHostinger = !!process.env.HOSTINGER
-if (isInHostinger) {
-  const dir = path.join(process.cwd(), "dist/public");
-  express.use(expressStaticMiddleware(dir));
-}
-else {
-  ViteExpress.bind(express, httpServer);
-}
+ViteExpress.bind(express, httpServer);
 
 httpServer.listen(HTTP_PORT, () => {
   console.log(
@@ -34,12 +25,6 @@ express.get("/health", async (_, res) => {
   console.log("Health check received");
   res.sendStatus(200);
 });
-
-if (isInHostinger) {
-  express.get("/:path", (req, res) => {
-    res.sendFile(path.join(process.cwd(), "dist/public_html/index.html"));
-  });
-}
 ioServer.use(socketManager.middleware);
 
 ioServer.on("connection", (socket) => {
