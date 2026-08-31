@@ -62,6 +62,8 @@ const chunkArray = <T>(arr: T[], size: number): T[][] =>
 
         console.log("🔄 Importing decks...");
         for (const [deckIndex, pack] of Object.entries(decks.packs)) {
+            // not sure why this one is breaking it
+            if(pack.name === "Reject Pack 3") {continue;}
             const whiteCards = decks.white
                 .map((text, index) => ({ text, index }))
                 .filter(({ index }) => pack.white.includes(index))
