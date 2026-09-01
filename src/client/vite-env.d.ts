@@ -10,6 +10,4 @@ interface ImportMetaEnv {
      * @prop password autofilled, Used for development purposes only
      */
     readonly VITE_AUTOFILL_PASSWORD?: string
-
-    readonly VITE_API_URL?: string;
   }
