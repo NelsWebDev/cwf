@@ -21,7 +21,7 @@ model User {
 
 model BlackCard {
   id        String   @id @default(cuid())
-  text      String
+  text      String @db.Text
   pick      Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -39,8 +39,8 @@ model WhiteCard {
 }
 model Deck {
   id        String      @id @default(cuid())
-  name      String
-  description String?
+  name      String @db.Text
+  description String? @db.Text
   importedDeckId String?
 
   createdAt DateTime    @default(now())

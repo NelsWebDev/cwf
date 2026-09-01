@@ -7,7 +7,7 @@ import ViteExpress from "vite-express";
 loadEnv({
   path: "../../.env"
 })
-const HTTP_PORT = process.env.PORT || 3000;
+const HTTP_PORT = process.env.HTTP_PORT || 3000;
 
 ViteExpress.bind(express, httpServer);
 

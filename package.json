@@ -9,7 +9,7 @@
     "install": "prisma generate",
     "dev": "nodemon -w src/server -x tsx src/server/index.ts",
     "start": "NODE_ENV=production tsx src/server/index.ts",
-    "import:cah": "tsx src/server/scripts/cahImport.ts",
+    "import:cah": "tsx src/server/scripts/cahImporter.ts",
     "import:custom": "tsx src/server/scripts/importCustomDeck.ts",
     "build": "vite build"
   },
@@ -28,11 +28,11 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.3",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3",
     "vite-express": "*",
     "yup": "^1.6.1"
-
   },
   "devDependencies": {
     "@types/express": "^5.0.1",
@@ -43,6 +43,5 @@
     "nodemon": "^3.1.10",
     "typescript": "^5.8.3",
     "vite": "^6.3.3"
-    
   }
 }
