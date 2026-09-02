@@ -43,7 +43,12 @@ const LoginPage = () => {
           placeholder="Your Name" required onChange={e => setUsernameInput(e.currentTarget.value)} value={usernameInput} />
           <PasswordInput label="Password" placeholder="Game password" required mt="md"
             styles={{ label: { color: 'light-dark(var(--mantine-color-dark-9), var(--mantine-color-white))' } }}
-            onChange={e => setPasswordInput(e.currentTarget.value)} value={passwordInput} />
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                login(usernameInput, passwordInput);
+              }
+            }}
+           onChange={e => setPasswordInput(e.currentTarget.value)} value={passwordInput} />
 
           <Button fullWidth mt="xl" onClick={() => login(usernameInput, passwordInput)}>
             Sign in
