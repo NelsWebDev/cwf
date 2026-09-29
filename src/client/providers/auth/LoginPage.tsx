@@ -32,11 +32,7 @@ const LoginPage = () => {
         {errorMessage && (
           <Text size="sm" mb="md"
             style={{ textAlign: 'center', color: 'light-dark(var(--mantine-color-red-8), var(--mantine-color-red-3))' }}>
-            {errorMessage !== "invalid" && errorMessage}
-            {errorMessage == "invalid" && (<iframe src="https://youtube.com/embed/ukznXQ3MgN0?autoplay=1&start=12&mute=0"
-              style={{ width: '226px', height: '400px', border: 'none', marginTop: '10px' }}
-              title="Error Video"
-            ></iframe>)}
+            {errorMessage}
           </Text>)}
         {(!disconnected || errorMessage === "You are logged out") && (<><TextInput label="Name"
           styles={{ label: { color: 'light-dark(var(--mantine-color-dark-9), var(--mantine-color-white))' } }}

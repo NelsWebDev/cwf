@@ -44,7 +44,7 @@ routes.post("/login", async ({ body }, res) => {
       return;
     }
     if (password !== process.env.GAME_PASSWORD) {
-      res.status(400).json({ success: false, error: "invalid" });
+      res.status(400).json({ success: false, error: "Invalid password" });
       return;
     }
 
