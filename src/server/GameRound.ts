@@ -58,13 +58,16 @@ export class GameRound implements TGameGround {
     this._plays.set(userId, cards || []);
     user.removeWhiteCardsFromHand(cards);
     if (this._plays.size === socketManager.activeUsers.length - 1) {
+      // Give players time to undo, then randomize submissions before revealing them.
+      const UNDO_TIMEOUT = 5_000;
+
       setTimeout(() => {
         if (this._plays.size === socketManager.activeUsers.length - 1) {
+          this.shufflePlays();
           this.status = RoundStatus.SELECTING_WINNER;
           game.emitJSON();
         }
-      }, 5_000);
-      // selecting winner time
+      }, UNDO_TIMEOUT);
     }
     game.emitJSON();
   }
@@ -129,6 +132,7 @@ export class GameRound implements TGameGround {
     ioServer.emit("winnerSelected", this.winnerId);
     this.blackCard.state = CardState.PLAYED_PREVIOUSLY;
 
+    // Wait before going on to next round so people can see the winner.
     setTimeout(() => {
       if (!game.started) return;
       const highScore = Math.max(...Array.from(game._points.values()));
@@ -187,5 +191,24 @@ export class GameRound implements TGameGround {
       game.skipBlackCard();
       console.log("skipping black card");
     }
+  }
+
+  /**
+ * Randomizes the display/selection order of submitted plays.
+ * Keeps each user's submitted set of cards together.
+ */
+  private shufflePlays() {
+    const shuffledEntries = Array.from(this._plays.entries());
+
+    // Fisher-Yates shuffle
+    for (let i = shuffledEntries.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledEntries[i], shuffledEntries[j]] = [
+        shuffledEntries[j],
+        shuffledEntries[i],
+      ];
+    }
+
+    this._plays = new Map(shuffledEntries);
   }
 }
