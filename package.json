@@ -16,7 +16,7 @@
   "dependencies": {
     "@mantine/core": "^7.17.5",
     "@mantine/hooks": "^7.17.5",
-    "@prisma/adapter-mariadb": "^7.10.0",
+    "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "@tabler/icons-react": "^3.31.0",
     "body-parser": "^2.2.0",
