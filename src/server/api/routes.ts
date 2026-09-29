@@ -96,7 +96,11 @@ routes.get("/health", async (req, res) => {
 });
 
 routes.get("/", async (_, res) => {
-  res.redirect(process.env.FRONTEND_URL);
+  const url = process.env.FRONTEND_URL;
+  if(url)
+    res.redirect(url);
+  else 
+    res.status(404);
 });
 
 export default routes;

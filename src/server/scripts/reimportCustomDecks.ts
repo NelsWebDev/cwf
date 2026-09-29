@@ -13,7 +13,7 @@ export const reimportCustomDecks = async () => {
         where: {
             importedDeckId: {
                 not: {
-                    startsWith: "CAH-"
+                    startsWith: "CAH-",
                 },
             },
             updatedAt: {
@@ -25,6 +25,7 @@ export const reimportCustomDecks = async () => {
 
     console.log(`Found ${outDatedDecks.length} decks to re-import (not updated in the last ${daysAgo} days).`);
     for (const { name, importedDeckId } of outDatedDecks) {
+        if(!importedDeckId) continue;
         try {
             console.log(`Re-importing deck: ${name}`);
             // eslint-disable-next-line no-await-in-loop

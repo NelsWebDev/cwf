@@ -49,13 +49,13 @@ export class GameRound implements TGameGround {
         throw new Error("User does not have this card");
       }
       const card = user.hand.get(playedCard.id);
-      if (card.isCustom) {
+      if (card?.isCustom) {
         card.text = playedCard.text;
       }
-      return card;
+      return card as any as WhiteCard;
     });
 
-    this._plays.set(userId, cards);
+    this._plays.set(userId, cards || []);
     user.removeWhiteCardsFromHand(cards);
     if (this._plays.size === socketManager.activeUsers.length - 1) {
       setTimeout(() => {

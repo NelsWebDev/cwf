@@ -15,28 +15,25 @@ export class SocketManager {
       return next(new Error("Authentication error"));
     }
 
-    if (!this.gameUsers.has(userId)) {
+    const user = this.gameUsers.get(userId);
+    if (!user) {
       return next(new Error("Invalid session. Please login again"));
     }
-
-    const user = this.gameUsers.get(userId);
 
     socket.data = user;
     return next();
   }
   async kickByUserId(userId: string) {
-    if (!this.gameUsers.has(userId)) {
+    const user = this.gameUsers.get(userId);
+    if (!user) {
       return;
     }
-    const user = this.gameUsers.get(userId);
     return user.kick();
   }
 
   userIsOnline(userId: string) {
-    if (!this.gameUsers.has(userId)) {
-      return false;
-    }
-    return this.gameUsers.get(userId).isActive;
+    const user = this.gameUsers.get(userId);
+    return this.gameUsers.get(userId)?.isActive ?? false
   }
 
   public async onSocketConnection(socket: Socket) {
@@ -117,7 +114,7 @@ export class SocketManager {
         } catch (error) {
           socket.emit("serverMessage", {
             title: "Whoops!",
-            message: `${error.message}`,
+            message: error instanceof Error ? `${error.message}` : typeof error == "string" ? error : "An unknown error occurred",
           });
           console.error(`Error in event handler ${handlerName}:`, error);
         }

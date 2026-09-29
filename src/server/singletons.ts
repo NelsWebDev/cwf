@@ -1,3 +1,4 @@
+import {config as loadEnv} from "dotenv";
 import { createServer as createHttpServer } from "http";
 import { Server as SocketServer } from "socket.io";
 import { PrismaClient } from "@prisma/client";
@@ -9,6 +10,10 @@ import {
 import { GameUser } from "./session/GameUser";
 import { SocketManager } from "./session/SocketManager";
 import { Game } from "./Game";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import path from "path";
+
+loadEnv();
 
 export const express = Express();
 export const httpServer = createHttpServer(express);
@@ -24,7 +29,8 @@ export const ioServer = new SocketServer<
   },
 });
 
-export const prismaClient = new PrismaClient();
+
+export const prismaClient = new PrismaClient({adapter: new PrismaMariaDb(process.env.DATABASE_URL!)});
 export const socketManager = new SocketManager();
 export const game = new Game();
 

@@ -115,7 +115,7 @@ export class GameUser {
   }
 
   selectWinner(winningCardId: string) {
-    if (game.currentRound.cardCzar.id !== this.id) {
+    if (game.currentRound?.cardCzar.id !== this.id) {
       throw new Error("You are not the card czar");
     }
     return game.currentRound?.selectWinner(winningCardId);
