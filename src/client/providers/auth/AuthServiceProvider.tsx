@@ -1,8 +1,9 @@
 import { ReactElement, useEffect, useMemo, useState } from "react";
-import { io } from "socket.io-client";
 import { AuthService, LoginResponse, Socket, User } from "../../types";
-import { AuthServiceContext } from "../Contexts";
+import { io } from "socket.io-client";
 import LoginPage from "./LoginPage";
+import { AuthServiceContext } from "../Contexts";
+import { urlIsOK } from "../../utils/urls";
 
 
 const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
@@ -10,7 +11,7 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
     const [isAuthenticating, setIsAuthenticating] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [user, setUser] = useState<Omit<User, "isCardCzar">>();
-    const socket: Socket = useMemo(() => io({
+    const socket: Socket = useMemo(() => io("", {
         autoConnect: localStorage.getItem("userId") ? true : false,
         auth: { userId: localStorage.getItem("userId") || "" },
     }), []);

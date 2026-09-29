@@ -1,10 +1,14 @@
-import cors from "cors";
 import { config as loadEnv } from "dotenv";
-import ViteExpress from "vite-express";
+import { express, httpServer, ioServer, prismaClient, socketManager } from "./singletons";
 import ApiRouter from "./api/routes";
-import { express, httpServer, ioServer, prismaClient, socketManager, } from "./singletons";
-loadEnv();
-const HTTP_PORT = Number(process.env.PORT || 3000);
+import cors from "cors";
+import path from "path";
+import ViteExpress from "vite-express";
+loadEnv({
+  path: "../../.env"
+})
+const HTTP_PORT = process.env.HTTP_PORT || 3000;
+
 ViteExpress.bind(express, httpServer);
 
 httpServer.listen(HTTP_PORT, () => {
@@ -18,13 +22,8 @@ express.use(
     origin: "*",
   }),
 );
-
 express.use("/api", ApiRouter);
 
-express.get("/health", async (_, res) => {
-  console.log("Health check received");
-  res.sendStatus(200);
-});
 ioServer.use(socketManager.middleware);
 
 ioServer.on("connection", (socket) => {
@@ -32,6 +31,6 @@ ioServer.on("connection", (socket) => {
 });
 prismaClient.$connect().then(() => {
   console.log("Connected to the database");
-}).catch((error) => {
+}).catch((error:Error) => {
   console.log(error);
 });

@@ -17,42 +17,34 @@ model User {
   username String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  @@map("users")
 }
 
 model BlackCard {
   id        String   @id @default(cuid())
-  text      String @db.MediumText
+  text      String @db.Text
   pick      Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deckId    String
   deck      Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
-
-  @@map("cards_blacks")
 }
 
 model WhiteCard {
   id        String   @id @default(cuid())
-  text      String @db.MediumText
+  text      String   @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deckId    String
   deck      Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
-
-  @@map("cards_whites")
 }
 model Deck {
   id        String      @id @default(cuid())
-  name      String
-  description String?
+  name      String @db.Text
+  description String? @db.Text
   importedDeckId String?
 
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   blackCards BlackCard[]
   whiteCards WhiteCard[]
-
-  @@map("cards_decks")
 }

@@ -90,12 +90,13 @@ routes.post("/decks/import", async (req, res) => {
   }
 });
 
+routes.get("/health", async (req, res) => {
+  console.log("Health check received");
+  res.sendStatus(200);
+});
 
 routes.get("/", async (_, res) => {
-  res.redirect(307, "/");
-});
-routes.get("/:path", async (_, res) => {
-  res.status(404).json({ error: "invalid API endpoint" });
+  res.redirect(process.env.FRONTEND_URL);
 });
 
 export default routes;

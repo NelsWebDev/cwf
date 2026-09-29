@@ -1,5 +1,4 @@
 import { Container } from '@mantine/core';
-import React from 'react';
 import MyHand from './components/MyHand';
 import { HeaderMenu } from './components/Navbar';
 import RoundArea from './components/RoundArea';

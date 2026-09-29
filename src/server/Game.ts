@@ -21,7 +21,6 @@ export class Game {
   _points: Map<string, number> = new Map();
   addedDecks: CardDeck[] = [];
   _currentRound?: GameRound | undefined;
-  keepAlive?: NodeJS.Timeout | undefined;
 
   async addDeck(deckId: string) {
     if (this.addedDecks.some((d) => d.id === deckId)) {
@@ -91,13 +90,6 @@ export class Game {
     this.moveToNextCzar();
     this._currentRound = new GameRound(blackCard, this.currentCardCzar);
     ioServer.emit("game", this.toJSON());
-    if (process.env.BACKEND_URL) {
-      fetch(`${process.env.BACKEND_URL}/health`);
-      this.keepAlive = setInterval(() => {
-        console.log("Game health check while game is running");
-        fetch(`${process.env.BACKEND_URL}/health`)
-      }, 1_000 * 60 * 14);
-    }
   }
 
   private shuffleWhiteCardsWithAddedCustoms(cards: WhiteCard[]) {
@@ -135,10 +127,6 @@ export class Game {
   }
 
   endGame() {
-    if (this.keepAlive) {
-      clearInterval(this.keepAlive);
-      this.keepAlive = undefined;
-    }
     const winningPlayer = this.winningPlayer();
     this._currentCzar = undefined;
     this._points.clear();

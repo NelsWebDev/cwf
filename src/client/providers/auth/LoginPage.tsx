@@ -1,14 +1,14 @@
-import { Button, Center, Container, Paper, PasswordInput, Text, TextInput, Title } from "@mantine/core";
-import React, { useState } from "react";
-import ThemeSelector from "../../components/ThemeSelector";
+import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { Button, Center, Container, Paper, PasswordInput, Text, TextInput, Title } from "@mantine/core";
+import ThemeSelector from "../../components/ThemeSelector";
 
 
 
 
 const LoginPage = () => {
-  const [usernameInput, setUsernameInput] = useState('');
-  const [passwordInput, setPasswordInput] = useState('');
+  const [usernameInput, setUsernameInput] = useState(import.meta.env.VITE_AUTOFILL_USERNAME || '');
+  const [passwordInput, setPasswordInput] = useState(import.meta.env.VITE_AUTOFILL_PASSWORD || '');
   const { login, errorMessage, isAuthenticated, disconnected, reconnect } = useAuth();
 
   if (localStorage.getItem('authToken') && !isAuthenticated && !errorMessage) {
@@ -43,7 +43,12 @@ const LoginPage = () => {
           placeholder="Your Name" required onChange={e => setUsernameInput(e.currentTarget.value)} value={usernameInput} />
           <PasswordInput label="Password" placeholder="Game password" required mt="md"
             styles={{ label: { color: 'light-dark(var(--mantine-color-dark-9), var(--mantine-color-white))' } }}
-            onChange={e => setPasswordInput(e.currentTarget.value)} value={passwordInput} />
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                login(usernameInput, passwordInput);
+              }
+            }}
+           onChange={e => setPasswordInput(e.currentTarget.value)} value={passwordInput} />
 
           <Button fullWidth mt="xl" onClick={() => login(usernameInput, passwordInput)}>
             Sign in
