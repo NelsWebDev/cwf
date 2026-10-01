@@ -6,7 +6,7 @@
   "repository": "https://github.com/NelsWebDev/cwf",
   "author": "Nels Romerdahl <7355705+NelsWebDev@users.noreply.github.com>",
   "scripts": {
-    "install": "prisma generate",
+    "postinstall": "prisma generate",
     "dev": "nodemon -w src/server -x tsx src/server/index.ts",
     "start": "NODE_ENV=production tsx src/server/index.ts",
     "import:cah": "tsx src/server/scripts/cahImporter.ts",
