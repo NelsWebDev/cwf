@@ -40,6 +40,12 @@ const BlackCard = () => {
                         <IconThumbDownFilled color="white" size="1.2rem" style={{cursor: "pointer"}}  stroke={1.5} onClick={() => voteToSkipBlackCard(true)} />
                     )}
 
+                    {Object.values(currentRound?.votesToSkip || {}).filter(v => v).length ? (
+                        <Text c="white" size="sm">
+                            {Object.values(currentRound?.votesToSkip || {}).filter(v => v).length} vote(s) to skip
+                        </Text>
+                    ) : null}
+
                 </Group>
             </Card.Section>
 
