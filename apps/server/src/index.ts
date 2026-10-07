@@ -3,13 +3,11 @@ import { express, httpServer, ioServer, prismaClient, socketManager } from "./si
 import ApiRouter from "./api/routes";
 import cors from "cors";
 import path from "path";
-import ViteExpress from "vite-express";
 loadEnv({
   path: "../../.env"
 })
 const HTTP_PORT = process.env.HTTP_PORT || 3000;
 
-ViteExpress.bind(express, httpServer);
 
 httpServer.listen(HTTP_PORT, () => {
   console.log(

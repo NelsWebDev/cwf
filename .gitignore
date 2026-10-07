@@ -28,3 +28,4 @@ dist-ssr
 **/build
 **/.env
 **/.DS_Store
+.turbo

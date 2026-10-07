@@ -3,7 +3,6 @@ import { AuthService, LoginResponse, Socket, User } from "../../types";
 import { io } from "socket.io-client";
 import LoginPage from "./LoginPage";
 import { AuthServiceContext } from "../Contexts";
-import { urlIsOK } from "../../utils/urls";
 
 
 const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
