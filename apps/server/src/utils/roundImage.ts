@@ -1,4 +1,5 @@
-import { createCanvas, GlobalFonts, type SKRSContext2D } from "@napi-rs/canvas";
+import { createCanvas, GlobalFonts, type Image, type SKRSContext2D } from "@napi-rs/canvas";
+import { getCardImageUrl } from "./cardImages";
 import { fileURLToPath } from "node:url";
 
 // Resolves to apps/server/assets from both src/ and dist/.
@@ -11,6 +12,8 @@ export type RoundImageInput = {
   blackCardText: string;
   pick: number;
   plays: { username: string; cards: string[]; isWinner: boolean }[];
+  // Pre-downloaded images for "[img]url[/img]" cards, keyed by url.
+  images?: Map<string, Image>;
 };
 
 const WIDTH = 1600;
@@ -128,6 +131,7 @@ const drawTile = (
   y: number,
   w: number,
   h: number,
+  images?: Map<string, Image>,
 ) => {
   const pad = Math.max(14, Math.min(w, h) * 0.06);
   ctx.save();
@@ -179,7 +183,24 @@ const drawTile = (
       ctx.fillText(String(i + 1), cx + 30, cy + 31);
       textTop = cy + 56;
     }
-    drawFittedText(ctx, text, cx + 16, textTop, cardW - 32, cy + cardsH - textTop - 14, 34, "#111111");
+    const imageUrl = getCardImageUrl(text);
+    if (imageUrl) {
+      const img = images?.get(imageUrl);
+      const boxX = cx + 10;
+      const boxY = n > 1 ? textTop - 6 : cy + 10;
+      const boxW = cardW - 20;
+      const boxH = cy + cardsH - boxY - 10;
+      if (img && img.width > 0 && img.height > 0) {
+        const scale = Math.min(boxW / img.width, boxH / img.height);
+        const dw = img.width * scale;
+        const dh = img.height * scale;
+        ctx.drawImage(img, boxX + (boxW - dw) / 2, boxY + (boxH - dh) / 2, dw, dh);
+      } else {
+        drawFittedText(ctx, "Image unavailable", cx + 16, textTop, cardW - 32, cy + cardsH - textTop - 14, 28, "#888888");
+      }
+    } else {
+      drawFittedText(ctx, text, cx + 16, textTop, cardW - 32, cy + cardsH - textTop - 14, 34, "#111111");
+    }
 
     if (i < n - 1) {
       const ax = cx + cardW + arrowW / 2;
@@ -264,7 +285,7 @@ const drawLogo = (ctx: SKRSContext2D) => {
   ctx.restore();
 };
 
-export function renderRoundImage({ blackCardText, pick, plays }: RoundImageInput): Buffer {
+export function renderRoundImage({ blackCardText, pick, plays, images }: RoundImageInput): Buffer {
   const canvas = createCanvas(WIDTH, HEIGHT);
   const ctx = canvas.getContext("2d");
 
@@ -294,6 +315,7 @@ export function renderRoundImage({ blackCardText, pick, plays }: RoundImageInput
       areaY + row * (tileH + gap),
       tileW,
       tileH,
+      images,
     );
   });
 

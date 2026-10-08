@@ -4,6 +4,7 @@ import { game, socketManager } from "../singletons";
 import { subscribe, subscribeToUser } from "../pubsub";
 import { importDeck } from "../utils/cardImporter";
 import { announceGameStart, postImageToDiscord } from "../utils/discordWebhook";
+import { loadCardImages } from "../utils/cardImages";
 import { renderRoundImage } from "../utils/roundImage";
 import { requireAccess, requireUser, type GraphQLContext } from "./context";
 import { RoundStatus, type GameRound, type Rules, type WhiteCard } from "@repo/shared/types";
@@ -182,7 +183,11 @@ export const resolvers = {
       }
       round.sharedToDiscord = true;
       try {
+        const images = await loadCardImages(
+          Object.values(round.plays).flatMap((cards) => cards.map((card) => card.text)),
+        );
         const image = renderRoundImage({
+          images,
           blackCardText: round.blackCard.text,
           pick: round.blackCard.pick,
           plays: Object.entries(round.plays).map(([userId, cards]) => ({

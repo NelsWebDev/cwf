@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { express, httpServer, prismaClient } from "./singletons";
 import { startGraphQL } from "./graphql";
 import { resolve } from "node:path";
+import { getCachedCardImage } from "./utils/cardImages";
 loadEnv({
   path: "../../.env",
 });
@@ -26,6 +27,29 @@ const HTTP_PORT = Number(process.env.HTTP_PORT ?? 3000);
 express.get("/api", (_, res) => {
   const {FRONTEND_URL} = process.env;
   FRONTEND_URL ? res.redirect(FRONTEND_URL) : res.sendStatus(400)
+});
+
+// Lets browsers load custom card images through the server, for URLs only the server can reach.
+express.get("/api/card-image", async (req, res) => {
+  const url = req.query.url;
+  if (typeof url !== "string" || !url) {
+    res.sendStatus(400);
+    return;
+  }
+  try {
+    const { data, contentType } = await getCachedCardImage(url);
+    res
+      .set({
+        "Content-Type": contentType,
+        "Cache-Control": "public, max-age=600",
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'; sandbox",
+      })
+      .send(data);
+  } catch (error) {
+    console.warn(`Card image proxy failed for ${url}:`, error instanceof Error ? error.message : error);
+    res.sendStatus(502);
+  }
 });
 
 async function startServer() {

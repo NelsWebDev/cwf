@@ -4,6 +4,8 @@ import {  useGame } from "../hooks";
 import { WhiteCard as TWhiteCard, User } from "@repo/shared/types";
 import { useMemo } from "react";
 
+const apiBase = (import.meta.env.VITE_GRAPHQL_URL || "/api/graphql").replace(/\/graphql\/?$/, "");
+
 type WhiteCardProps = {
   data: TWhiteCard;
   animate?: boolean;
@@ -94,7 +96,7 @@ const WhiteCard = (props: WhiteCardProps) => {
           }}
         >
           <Image
-            src={url}
+            src={`${apiBase}/card-image?url=${encodeURIComponent(url)}`}
             alt="Card image"
             style={{
               maxWidth: "150px",
