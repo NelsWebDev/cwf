@@ -181,32 +181,36 @@ export class Game {
       prismaClient.blackCard
         .findMany({
           where: {
-            deckId: {
-              in: addedDeckIds,
+            decksCards: {
+              some: { deckId: { in: addedDeckIds } },
             },
             ...(this.rules.allowMultipleAnswerBlackCards ? {} : { pick: 1 }),
           },
+          include: { decksCards: { select: { deckId: true } } },
           orderBy: {
             createdAt: "asc",
           },
         })
         .then((cards) =>
-          cards.map<BlackCard>((card) => ({
+          cards.map<BlackCard>(({ decksCards, ...card }) => ({
             ...card,
+            deckIds: decksCards.map((d) => d.deckId),
             state: CardState.AVAILABLE,
           })),
         ),
       prismaClient.whiteCard
         .findMany({
           where: {
-            deckId: {
-              in: addedDeckIds,
+            decksCards: {
+              some: { deckId: { in: addedDeckIds } },
             },
           },
+          include: { decksCards: { select: { deckId: true } } },
         })
         .then((cards) =>
-          cards.map<WhiteCard>((card) => ({
+          cards.map<WhiteCard>(({ decksCards, ...card }) => ({
             ...card,
+            deckIds: decksCards.map((d) => d.deckId),
             state: CardState.AVAILABLE,
             isCustom: false,
           })),

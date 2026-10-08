@@ -36,9 +36,9 @@ export const parseDeckToPrismaCreate = (deck: OriginalDeckFormat) : Prisma.DeckC
     name: deck.name,
     description: deck.description,
     importedDeckId: deck.watermark,
-    blackCards: {create: blackCards},
+    blackCards: {create: blackCards.map((blackCard) => ({ blackCard: { create: blackCard } }))},
     whiteCards: {create: deck.responses.map((response) => ({
-      text: response.text[0],
+      whiteCard: { create: { text: response.text[0] } },
     }))},
   }
 }

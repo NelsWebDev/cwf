@@ -75,7 +75,7 @@ export class CardManager {
   static makeBlankWhiteCards(number: number): WhiteCard[] {
     return Array.from({ length: number }).map(() => ({
       id: crypto.randomUUID(),
-      deckId: undefined,
+      deckIds: [],
       text: "",
       state: CardState.AVAILABLE,
       createdAt: new Date(),

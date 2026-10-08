@@ -43,8 +43,8 @@ const RoundArea = () => {
                                         <WhiteCard
                                         data={{
                                             id: "",
+                                            deckIds: [],
                                             text: "",
-                                            
                                             createdAt: new Date(),
                                             updatedAt: new Date(),
                                             isCustom: false,

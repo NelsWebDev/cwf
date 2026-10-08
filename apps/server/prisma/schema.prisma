@@ -13,37 +13,54 @@ datasource db {
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
-  username String   @unique
+  username  String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model BlackCard {
-  id        String   @id @default(cuid())
-  text      String @db.Text
-  pick      Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deckId    String
-  deck      Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  id         String          @id @default(cuid())
+  text       String          @db.Text
+  pick       Int
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  decksCards DeckBlackCard[]
 }
 
 model WhiteCard {
-  id        String   @id @default(cuid())
-  text      String   @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deckId    String
-  deck      Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  id         String          @id @default(cuid())
+  text       String          @db.Text
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  decksCards DeckWhiteCard[]
 }
+
 model Deck {
-  id        String      @id @default(cuid())
-  name      String @db.Text
-  description String? @db.Text
+  id             String  @id @default(cuid())
+  name           String  @db.Text
+  description    String? @db.Text
   importedDeckId String?
 
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  blackCards BlackCard[]
-  whiteCards WhiteCard[]
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  blackCards DeckBlackCard[]
+  whiteCards DeckWhiteCard[]
+}
+
+model DeckBlackCard {
+  deckId      String
+  blackCardId String
+  deck        Deck      @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  blackCard   BlackCard @relation(fields: [blackCardId], references: [id], onDelete: Cascade)
+
+  @@id([deckId, blackCardId])
+}
+
+model DeckWhiteCard {
+  deckId      String
+  whiteCardId String
+  deck        Deck      @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  whiteCard   WhiteCard @relation(fields: [whiteCardId], references: [id], onDelete: Cascade)
+
+  @@id([deckId, whiteCardId])
 }

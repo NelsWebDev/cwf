@@ -70,7 +70,7 @@ export enum CardState  {
 }
 export type BlackCard = {
     id: string;
-    deckId: string;
+    deckIds: string[];
     text: string;
     pick: number;
     state: CardState;
@@ -80,7 +80,7 @@ export type BlackCard = {
 
 export type WhiteCard = {
     id: string;
-    deckId?: string;
+    deckIds: string[];
     text: string;
     isCustom: boolean;
     state: CardState;

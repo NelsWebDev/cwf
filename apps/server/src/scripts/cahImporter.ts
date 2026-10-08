@@ -88,20 +88,28 @@ const chunkArray = <T>(arr: T[], size: number): T[][] =>
 
             // Create white cards in chunks
             for (const whiteChunk of chunkArray(whiteCards, BATCH_SIZE)) {
-                await prismaClient.whiteCard.createMany({
-                    data: whiteChunk.map((card) => ({
-                        ...card,
+                const created = await prismaClient.whiteCard.createManyAndReturn({
+                    data: whiteChunk,
+                    select: { id: true },
+                });
+                await prismaClient.deckWhiteCard.createMany({
+                    data: created.map((card) => ({
                         deckId: createdDeck.id,
+                        whiteCardId: card.id,
                     })),
                 });
             }
 
             // Create black cards in chunks
             for (const blackChunk of chunkArray(blackCards, BATCH_SIZE)) {
-                await prismaClient.blackCard.createMany({
-                    data: blackChunk.map((card) => ({
-                        ...card,
+                const created = await prismaClient.blackCard.createManyAndReturn({
+                    data: blackChunk,
+                    select: { id: true },
+                });
+                await prismaClient.deckBlackCard.createMany({
+                    data: created.map((card) => ({
                         deckId: createdDeck.id,
+                        blackCardId: card.id,
                     })),
                 });
             }

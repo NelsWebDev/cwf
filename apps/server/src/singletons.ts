@@ -11,8 +11,10 @@ import { GameUser } from "./session/GameUser";
 import { SocketManager } from "./session/SocketManager";
 import { Game } from "./Game";
 import { PrismaPg } from "@prisma/adapter-pg";
+import path from "path";
 
-loadEnv();
+const envLocation = path.resolve(import.meta.dirname, "../../../.env");
+loadEnv({ path: envLocation });
 
 export const express = Express();
 export const httpServer = createHttpServer(express);
