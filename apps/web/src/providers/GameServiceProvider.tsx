@@ -376,7 +376,7 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
         setRules: (rules: Partial<Rules>) => { mutate(UPDATE_RULES_MUTATION, { rules }); },
         shareRoundToDiscord: async () => !!(await mutate(SHARE_ROUND_TO_DISCORD_MUTATION))?.shareRoundToDiscord,
         skipBlackCard: () => { mutate(SKIP_BLACK_CARD_MUTATION); },
-        voteToSkipBlackCard: () => { mutate(VOTE_TO_SKIP_MUTATION, { vote: true }); },
+        voteToSkipBlackCard: (vote: boolean) => { mutate(VOTE_TO_SKIP_MUTATION, { vote }); },
     }
 
 

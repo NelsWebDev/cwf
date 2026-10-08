@@ -363,4 +363,16 @@ describe("GameRound", () => {
 
     expect(mocks.game.skipBlackCard).not.toHaveBeenCalled();
   });
+
+  it("lets a player withdraw their skip vote", () => {
+    const voters = [addUser("one"), addUser("two"), addUser("three")];
+    const round = makeRound();
+
+    round.voteToSkip(voters[0]!.id, true);
+    round.voteToSkip(voters[0]!.id, false);
+    round.voteToSkip(voters[1]!.id, true);
+
+    expect(round.votesToSkip[voters[0]!.id]).toBe(false);
+    expect(mocks.game.skipBlackCard).not.toHaveBeenCalled();
+  });
 });

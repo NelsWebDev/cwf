@@ -186,6 +186,9 @@ export class GameRound implements TGameGround {
     if (this.status !== RoundStatus.WAITING_FOR_PLAYERS) {
       throw new Error("Cannot vote to skip in this phase");
     }
+    if (userId === this.cardCzar.id) {
+      throw new Error("Card czar cannot vote to skip");
+    }
     this._votesToSkip.set(userId, vote);
 
     const votes = [...this._votesToSkip.values()];
