@@ -90,3 +90,41 @@ describe("GameUser hand updates", () => {
     ]);
   });
 });
+
+describe("GameUser rename", () => {
+  beforeEach(() => {
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    mocks.publish.mockClear();
+    mocks.publishToUser.mockClear();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("changes the username and keeps the id", () => {
+    const user = new GameUser("old");
+    const id = user.id;
+
+    user.rename("new");
+
+    expect(user.username).toBe("new");
+    expect(user.id).toBe(id);
+  });
+
+  it("tells the user and every client about the new name", () => {
+    const user = new GameUser("old");
+
+    user.rename("new");
+
+    expect(mocks.publishToUser).toHaveBeenCalledWith(
+      user.id,
+      "myProfile",
+      expect.objectContaining({ id: user.id, username: "new" }),
+    );
+    expect(mocks.publish).toHaveBeenCalledWith(
+      "playerJoined",
+      expect.objectContaining({ id: user.id, username: "new" }),
+    );
+  });
+});
