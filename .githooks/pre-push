@@ -1,0 +1,19 @@
+#!/bin/sh
+set -eu
+
+pushes_to_main=false
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    pushes_to_main=true
+  fi
+done
+
+if [ "$pushes_to_main" = false ]; then
+  exit 0
+fi
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
+
+echo "Running backend tests before pushing to main..."
+pnpm --filter @repo/db test

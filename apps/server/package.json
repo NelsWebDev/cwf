@@ -9,6 +9,7 @@
     "dev": "NODE_ENV=development tsx src/index.ts",
     "start": "NODE_ENV=production node dist/index.js",
     "build": "tsc --noEmit && node esbuild.config.mjs",
+    "test": "vitest run",
     "import:cah": "tsx src/scripts/cahImporter.ts",
     "import:custom": "tsx src/scripts/importCustomDeck.ts"
   },
@@ -35,7 +36,8 @@
     "@types/ws": "^8.18.2",
     "esbuild": "^0.28.2",
     "prisma": "^7.10.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^5.0.3"
   },
   "devEngines": {
     "packageManager": {

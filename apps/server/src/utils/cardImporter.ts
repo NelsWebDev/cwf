@@ -14,23 +14,14 @@ type OriginalDeckFormat = {
 
 export const parseDeckToPrismaCreate = (deck: OriginalDeckFormat) : Prisma.DeckCreateInput => {
   const blackCards = deck.calls.map((call) => {
-    let formattedString = "";
     const numberOfBlanks = call.text.length - 1;
-  
-    const lastIndex = call.text.length - 1;
-    const text = call.text.map((part, index) => {
-      if(part.trim() === "" && index !== lastIndex) {
-        formattedString += " _________ ";
-        return;
-      }
-      formattedString += part;
-      if(index !== lastIndex) {
-        formattedString += " _________ ";
-      }  
-      formattedString = formattedString.replace(/(_+)\s+([!?,.])/g, '$1$2').trim();
-    });
+    const text = call.text
+      .map((part) => part.trim())
+      .join(" _________ ")
+      .replace(/(_+)\s+([!?,.])/g, "$1$2")
+      .trim();
 
-    return {text: formattedString, pick: numberOfBlanks};
+    return { text, pick: numberOfBlanks };
   });
   return {
     name: deck.name,
