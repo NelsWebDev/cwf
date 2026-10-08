@@ -202,7 +202,7 @@ const drawTile = (
   roundRect(ctx, x + pad, py, w - pad * 2, pillH, pillH / 2);
   ctx.fillStyle = color;
   ctx.fill();
-  const label = play.isWinner ? `${play.username}  ★ WINNER` : play.username;
+  const label = play.username;
   let size = 30;
   ctx.font = `800 ${size}px ${FONT}`;
   while (size > 14 && ctx.measureText(label).width > w - pad * 2 - 24) {
@@ -215,12 +215,62 @@ const drawTile = (
   ctx.fillText(label, x + w / 2, py + pillH / 2 + 2);
 };
 
+const drawLogo = (ctx: SKRSContext2D) => {
+  const x = 60;
+  const y = 590;
+
+  // Fanned pair of cards.
+  const card = (cx: number, cy: number, angle: number, fill: string, stroke?: string) => {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+    ctx.shadowColor = "rgba(0,0,0,0.35)";
+    ctx.shadowBlur = 14;
+    ctx.shadowOffsetY = 5;
+    roundRect(ctx, -34, -46, 68, 92, 10);
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.shadowColor = "transparent";
+    if (stroke) {
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = stroke;
+      ctx.stroke();
+    }
+    ctx.restore();
+  };
+  card(x + 48, y + 62, -0.2, "#ffffff");
+  card(x + 100, y + 64, 0.2, "#0d0d0d", "#ffe600");
+
+  // Outfit is a variable font; stroking in the fill colour fakes extra weight.
+  const text = (label: string, tx: number, ty: number, size: number, fill: string) => {
+    ctx.font = `800 ${size}px ${FONT}`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = size * 0.07;
+    ctx.strokeStyle = fill;
+    ctx.fillStyle = fill;
+    ctx.strokeText(label, tx, ty);
+    ctx.fillText(label, tx, ty);
+  };
+  const tx = x + 170;
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.35)";
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetY = 3;
+  text("CARDS", tx, y + 52, 52, "#ffffff");
+  text("WITH", tx, y + 92, 30, "#ffe600");
+  text("FRIENDS", tx, y + 144, 52, "#ffffff");
+  ctx.restore();
+};
+
 export function renderRoundImage({ blackCardText, pick, plays }: RoundImageInput): Buffer {
   const canvas = createCanvas(WIDTH, HEIGHT);
   const ctx = canvas.getContext("2d");
 
   drawBackground(ctx);
   drawBlackCard(ctx, blackCardText, pick);
+  drawLogo(ctx);
 
   const areaX = 560;
   const areaY = 80;
