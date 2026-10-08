@@ -1,14 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { resolve } from 'path' // 💡 Import path resolution
+import { fileURLToPath } from 'node:url'
 
 // https://vite.dev/config/
 export default defineConfig({
+  root: fileURLToPath(new URL('.', import.meta.url)),
   plugins: [react()],
-  base: "/cwf/",
   build: {
-    // 💡 Forces the output directory to always be inside apps/web/dist
-    outDir: resolve(__dirname, 'dist'),
+    outDir: '../server/public',
     emptyOutDir: true,
   }
 })

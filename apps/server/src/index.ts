@@ -1,40 +1,55 @@
 import { config as loadEnv } from "dotenv";
+import ViteExpress from "vite-express";
+import { fileURLToPath } from "node:url";
 import { express, httpServer, prismaClient } from "./singletons";
 import { startGraphQL } from "./graphql";
+import { resolve } from "node:path";
+
 loadEnv({
-  path: "../../.env"
+  path: "../../.env",
 });
 
+const webRoot = fileURLToPath(new URL("../../web/", import.meta.url));
+const staticOutput = fileURLToPath(new URL("../public/", import.meta.url));
+const viteConfigFile = resolve(webRoot, "vite.config.ts");
 
-
-const HTTP_PORT = process.env.HTTP_PORT || 3000;
-
-express.get("/domain", (req, res) => {
-  res.send(req.hostname);
+ViteExpress.config({
+  mode: process.env.NODE_ENV === "production" ? "production" : "development",
+  viteConfigFile,
+  inlineViteConfig: {
+    root: webRoot,
+    build: { outDir: staticOutput },
+  },
 });
 
-express.get("/api/health", (_, res) => {
-  console.log("Health check received");
-  res.sendStatus(200);
-});
+const HTTP_PORT = Number(process.env.HTTP_PORT ?? 3000);
 
 express.get("/api", (_, res) => {
-  const url = process.env.FRONTEND_URL;
-  if (url) res.redirect(url);
-  else res.sendStatus(404);
+  const {FRONTEND_URL} = process.env;
+  FRONTEND_URL ? res.redirect(FRONTEND_URL) : res.sendStatus(400)
 });
 
-startGraphQL().then(() => {
+async function startServer() {
+  await startGraphQL();
+  await ViteExpress.bind(express, httpServer);
+
   httpServer.listen(HTTP_PORT, () => {
     console.log(
       `Server is running on port ${HTTP_PORT} at http://localhost:${HTTP_PORT}`,
     );
     console.log(`GraphQL endpoint: http://localhost:${HTTP_PORT}/api/graphql`);
   });
-});
+}
 
-prismaClient.$connect().then(() => {
-  console.log("Connected to the database");
-}).catch((error:Error) => {
-  console.log(error);
-});
+startServer()
+  .catch((error: unknown) => {
+    console.error("Failed to start the server", error);
+    process.exitCode = 1;
+  });
+
+prismaClient
+  .$connect()
+  .then(() => console.log("Connected to the database"))
+  .catch((error: unknown) => {
+    console.error("Failed to connect to the database", error);
+  });

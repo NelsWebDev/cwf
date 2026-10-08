@@ -6,7 +6,9 @@
   "repository": "https://github.com/NelsWebDev/cwf",
   "author": "Nels Romerdahl <7355705+NelsWebDev@users.noreply.github.com>",
   "scripts": {
-    "dev": "turbo dev"
+    "dev": "pnpm --filter @repo/db dev",
+    "build": "pnpm --filter @repo/web build && pnpm --filter @repo/db build",
+    "start": "pnpm build && pnpm --filter @repo/db start"
   },
   "dependencies": {
     "turbo": "^2.11.7"
