@@ -1,5 +1,5 @@
 {
-  "name": "@repo/db",
+  "name": "@repo/server",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "NODE_ENV=development tsx src/index.ts",
     "start": "NODE_ENV=production node dist/index.js",
-    "build": "tsc --noEmit && node esbuild.config.mjs",
+    "build": "prisma generate && tsc --noEmit && node esbuild.config.mjs",
     "test": "vitest run",
     "import:cah": "tsx src/scripts/cahImporter.ts",
     "import:custom": "tsx src/scripts/importCustomDeck.ts"

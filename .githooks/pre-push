@@ -16,4 +16,4 @@ repo_root=$(git rev-parse --show-toplevel)
 cd "$repo_root"
 
 echo "Running backend tests before pushing to main..."
-pnpm --filter @repo/db test
+pnpm --filter @repo/server test

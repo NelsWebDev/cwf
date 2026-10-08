@@ -6,14 +6,16 @@
   "repository": "https://github.com/NelsWebDev/cwf",
   "author": "Nels Romerdahl <7355705+NelsWebDev@users.noreply.github.com>",
   "scripts": {
-    "dev": "pnpm --filter @repo/db dev",
-    "build": "pnpm --filter @repo/web build && pnpm --filter @repo/db build",
-    "start": "pnpm build && pnpm --filter @repo/db start",
+    "dev": "pnpm --filter @repo/server dev",
+    "test": "pnpm --filter @repo/server test",
+    "prisma": "pnpm --filter @repo/server prisma",
+    "import:cah": "pnpm --filter @repo/server import:cah",
+    "import:custom": "pnpm --filter @repo/server import:custom",
+    "build": "pnpm --filter @repo/web build && pnpm --filter @repo/server build",
+    "start": "pnpm build && pnpm --filter @repo/server start",
     "setup:hooks": "git config core.hooksPath .githooks"
   },
-  "dependencies": {
-    "turbo": "^2.11.7"
-  },
+  "dependencies": {},
   "devDependencies": {
     "typescript": "^5.8.3"
   },
