@@ -23,6 +23,7 @@ vi.mock("../singletons", () => ({
       return mocks.activeUsers;
     },
     closeConnections: mocks.closeConnections,
+    syncDiscordPlayers: vi.fn(),
   },
 }));
 

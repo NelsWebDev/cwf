@@ -30,62 +30,95 @@ describe("announceGameStart", () => {
     vi.restoreAllMocks();
   });
 
-  it("posts the game announcement and neutralizes mentions in the username", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+  it("posts the announcement with the current players and returns a message id", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ id: "m1" }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
     const { announceGameStart } = await loadAnnouncer();
 
-    await expect(announceGameStart("@everyone")).resolves.toBe(true);
+    await expect(announceGameStart(["@everyone", "bob"])).resolves.toBe(true);
 
     const [url, request] = fetchMock.mock.calls[0]!;
-    expect(url).toBeInstanceOf(URL);
     expect((url as URL).searchParams.get("wait")).toBe("true");
     expect((url as URL).searchParams.get("with_components")).toBe("true");
     expect(JSON.parse(request.body)).toMatchObject({
       flags: 32768,
-      allowed_mentions: { parse: ["everyone"] },
       components: [
         {
           components: [
             {},
-            { content: expect.stringContaining("@\u200beveryone") },
+            { content: "**Current Players:** @\u200beveryone, bob" },
             { content: "**Password:** test-password" },
           ],
-          accessory: {
-            label: "Join Game",
-            url: "https://cards.nels.app",
-          },
+          accessory: { label: "Join Game", url: "https://cards.nels.app" },
         },
       ],
     });
   });
 
-  it("mentions the starter when a Discord ID is provided", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+  it("patches the announcement message when players change", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(async () => new Response(JSON.stringify({ id: "m1" }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
-    const { announceGameStart } = await loadAnnouncer();
+    const { announceGameStart, updateAnnouncedPlayers } = await loadAnnouncer();
 
-    await announceGameStart("player", "123456789012345678");
+    await announceGameStart(["a"]);
+    await updateAnnouncedPlayers(["a", "b"]);
 
-    const body = JSON.parse(fetchMock.mock.calls[0]![1].body);
-    expect(body.allowed_mentions).toEqual({ parse: ["everyone"], users: ["123456789012345678"] });
-    expect(body.components[0].components[1].content).toContain("<@123456789012345678>");
+    const [url, request] = fetchMock.mock.calls[1]!;
+    expect(request.method).toBe("PATCH");
+    expect((url as URL).pathname).toBe("/webhook/messages/m1");
+    expect((url as URL).searchParams.get("with_components")).toBe("true");
+    expect(JSON.parse(request.body).components[0].components[1].content).toBe(
+      "**Current Players:** a, b",
+    );
   });
 
-  it("limits successful announcements to one per cooldown window", async () => {
-    let now = 1_000;
-    vi.spyOn(Date, "now").mockImplementation(() => now);
-    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+  it("deletes the announcement after the room has been empty for 3 minutes", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(async () => new Response(JSON.stringify({ id: "m1" }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { announceGameStart, updateAnnouncedPlayers } = await loadAnnouncer();
+
+    await announceGameStart(["a"]);
+    await updateAnnouncedPlayers([]);
+    await vi.advanceTimersByTimeAsync(2 * 60 * 1000);
+    await updateAnnouncedPlayers(["a"]);
+    await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+    expect(fetchMock.mock.calls.some(([, r]) => r.method === "DELETE")).toBe(false);
+
+    await updateAnnouncedPlayers([]);
+    await vi.advanceTimersByTimeAsync(3 * 60 * 1000);
+    const del = fetchMock.mock.calls.find(([, r]) => r.method === "DELETE")!;
+    expect((del[0] as URL).pathname).toBe("/webhook/messages/m1");
+    vi.useRealTimers();
+  });
+
+  it("does not patch before a game has been announced", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const { updateAnnouncedPlayers } = await loadAnnouncer();
+
+    await updateAnnouncedPlayers(["a"]);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("reuses the live announcement for a new game instead of reposting", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(async () => new Response(JSON.stringify({ id: "m1" }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
     const { announceGameStart } = await loadAnnouncer();
 
-    await expect(announceGameStart("first")).resolves.toBe(true);
-    now += 14 * 60 * 1000;
-    await expect(announceGameStart("too soon")).resolves.toBe(false);
-    now += 2 * 60 * 1000;
-    await expect(announceGameStart("cooldown ended")).resolves.toBe(true);
+    await expect(announceGameStart(["a"])).resolves.toBe(true);
+    await expect(announceGameStart(["a", "b"])).resolves.toBe(false);
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls.map(([, r]) => r.method)).toEqual(["POST", "PATCH"]);
   });
 
   it("rejects concurrent announcements while a request is pending", async () => {
@@ -99,9 +132,9 @@ describe("announceGameStart", () => {
     vi.stubGlobal("fetch", fetchMock);
     const { announceGameStart } = await loadAnnouncer();
 
-    const firstAnnouncement = announceGameStart("first");
+    const firstAnnouncement = announceGameStart(["first"]);
     await Promise.resolve();
-    await expect(announceGameStart("second")).resolves.toBe(false);
+    await expect(announceGameStart(["x"])).resolves.toBe(false);
 
     resolveFetch(new Response(null, { status: 204 }));
     await expect(firstAnnouncement).resolves.toBe(true);
@@ -116,10 +149,10 @@ describe("announceGameStart", () => {
     vi.stubGlobal("fetch", fetchMock);
     const { announceGameStart } = await loadAnnouncer();
 
-    await expect(announceGameStart("first")).rejects.toThrow(
+    await expect(announceGameStart(["first"])).rejects.toThrow(
       "Discord webhook returned HTTP 500",
     );
-    await expect(announceGameStart("retry")).resolves.toBe(true);
+    await expect(announceGameStart(["x"])).resolves.toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
@@ -129,7 +162,7 @@ describe("announceGameStart", () => {
     vi.stubGlobal("fetch", fetchMock);
     const { announceGameStart } = await loadAnnouncer();
 
-    await expect(announceGameStart("player")).rejects.toThrow(
+    await expect(announceGameStart(["x"])).rejects.toThrow(
       "GAME_PASSWORD is not configured",
     );
     expect(fetchMock).not.toHaveBeenCalled();

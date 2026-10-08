@@ -31,7 +31,7 @@ const USER_FIELDS = gql`
     isActive
     points
     isCardCzar
-    discordId
+    discordName
     newHandsRemaining
   }
 `;
@@ -57,7 +57,6 @@ const RULES_FIELDS = gql`
     newHandsPerGame
     maxNumberOfPlayers
     allowMultipleAnswerBlackCards
-    announceToDiscord
   }
 `;
 const WHITE_CARD_FIELDS = gql`
@@ -143,9 +142,9 @@ export const UPDATE_USERNAME_MUTATION = typed<{ updateUsername: User }, { userna
   ${USER_FIELDS}
   mutation UpdateUsername($username: String!) { updateUsername(username: $username) { ...UserFields } }
 `);
-export const UPDATE_DISCORD_ID_MUTATION = typed<{ updateDiscordId: User }, { discordId: string }>(gql`
+export const UPDATE_DISCORD_NAME_MUTATION = typed<{ updateDiscordName: User }, { discordName: string }>(gql`
   ${USER_FIELDS}
-  mutation UpdateDiscordId($discordId: String!) { updateDiscordId(discordId: $discordId) { ...UserFields } }
+  mutation UpdateDiscordName($discordName: String!) { updateDiscordName(discordName: $discordName) { ...UserFields } }
 `);
 export const KICK_PLAYER_MUTATION = typed<{ kickPlayer: boolean }, { userId: string }>(gql`
   mutation KickPlayer($userId: ID!) { kickPlayer(userId: $userId) }
@@ -164,7 +163,9 @@ export const UPDATE_RULES_MUTATION = typed<{ updateRules: Rules }, { rules: Part
   ${RULES_FIELDS}
   mutation UpdateRules($rules: RulesInput!) { updateRules(rules: $rules) { ...RulesFields } }
 `);
-export const START_GAME_MUTATION = typed<{ startGame: boolean }>(gql`mutation StartGame { startGame }`);
+export const START_GAME_MUTATION = typed<{ startGame: boolean }, { announceToDiscord: boolean }>(
+  gql`mutation StartGame($announceToDiscord: Boolean) { startGame(announceToDiscord: $announceToDiscord) }`,
+);
 export const END_GAME_MUTATION = typed<{ endGame: boolean }>(gql`mutation EndGame { endGame }`);
 export const PLAY_CARDS_MUTATION = typed<{ playCards: boolean }, { cards: Pick<WhiteCard, "id" | "text">[] }>(gql`
   mutation PlayCards($cards: [WhiteCardInput!]!) { playCards(cards: $cards) }

@@ -4,7 +4,7 @@ export type User = {
     isActive: boolean;
     points: number;
     isCardCzar: boolean;
-    discordId?: string | null;
+    discordName?: string | null;
     newHandsRemaining: number;
 }
 
@@ -57,7 +57,6 @@ export type Rules = {
     newHandsPerGame: number;
     maxNumberOfPlayers: number;
     allowMultipleAnswerBlackCards: boolean;
-    announceToDiscord: boolean;
 }
 
 export const DEFAULT_RULES: Rules = {
@@ -68,7 +67,6 @@ export const DEFAULT_RULES: Rules = {
     newHandsPerGame: 0,
     maxNumberOfPlayers: 10,
     allowMultipleAnswerBlackCards: true,
-    announceToDiscord: true,
 }
 
 

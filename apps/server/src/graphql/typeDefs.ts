@@ -20,7 +20,7 @@ export const typeDefs = /* GraphQL */ `
     isActive: Boolean!
     points: Int!
     isCardCzar: Boolean!
-    discordId: String
+    discordName: String
     newHandsRemaining: Int!
   }
 
@@ -44,7 +44,6 @@ export const typeDefs = /* GraphQL */ `
     newHandsPerGame: Int!
     maxNumberOfPlayers: Int!
     allowMultipleAnswerBlackCards: Boolean!
-    announceToDiscord: Boolean!
   }
 
   input RulesInput {
@@ -55,7 +54,6 @@ export const typeDefs = /* GraphQL */ `
     newHandsPerGame: Int
     maxNumberOfPlayers: Int
     allowMultipleAnswerBlackCards: Boolean
-    announceToDiscord: Boolean
   }
 
   type BlackCard {
@@ -125,13 +123,13 @@ export const typeDefs = /* GraphQL */ `
     login(username: String!, password: String!): User!
     logout: Boolean!
     updateUsername(username: String!): User!
-    updateDiscordId(discordId: String!): User!
+    updateDiscordName(discordName: String!): User!
     kickPlayer(userId: ID!): Boolean!
     importDeck(deckId: String!): CardDeck!
     addDeck(deckId: ID!): Boolean!
     removeDeck(deckId: ID!): Boolean!
     updateRules(rules: RulesInput!): Rules!
-    startGame: Boolean!
+    startGame(announceToDiscord: Boolean): Boolean!
     endGame: Boolean!
     playCards(cards: [WhiteCardInput!]!): Boolean!
     undoPlay: Boolean!

@@ -121,12 +121,11 @@ describe("Game", () => {
   it("updates only the supplied rules and broadcasts the result", () => {
     const game = new Game();
 
-    game.updateRules({ pointsToWin: 12, announceToDiscord: false });
+    game.updateRules({ pointsToWin: 12 });
 
     expect(game.rules).toEqual({
       ...DEFAULT_RULES,
       pointsToWin: 12,
-      announceToDiscord: false,
     });
     expect(mocks.publish).toHaveBeenCalledWith("rules", game.rules);
   });

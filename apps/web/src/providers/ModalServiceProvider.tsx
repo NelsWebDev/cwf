@@ -1,4 +1,4 @@
-import { ReactElement, useState } from "react";
+import { ReactElement, useRef, useState } from "react";
 import { ModalService,  ShowModalProps } from "../types";
 import { Modal, Text } from "@mantine/core";
 import { useSubscription } from "@apollo/client/react";
@@ -12,6 +12,7 @@ const ModalServiceProvider = ({children} : {children: React.ReactNode}) => {
     const [title, setTitle] = useState("");
     const [message, setMessage] = useState<string|ReactElement>("");
     const [canClose, setCanClose] = useState(true);
+    const autoCloseTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
     const [element, setElement] = useState<ReactElement|undefined>(undefined);
 
 
@@ -25,25 +26,28 @@ const ModalServiceProvider = ({children} : {children: React.ReactNode}) => {
 
     const showModal = (props: ShowModalProps ) => {
         const {title, autoclose} = props;
+        if (autoCloseTimer.current) {
+            clearTimeout(autoCloseTimer.current);
+            autoCloseTimer.current = undefined;
+        }
         setTitle(title ? title : "Server Message");
-        if("message" in props) {
-            setMessage(props.message);
-        }
-        if("element" in props) {
-            setElement(props.element);
-        }
+        setMessage("message" in props ? props.message : "");
+        setElement("element" in props ? props.element : undefined);
+        setCanClose(!("canClose" in props && props.canClose === false));
         setIsModalOpen(true);
         if(autoclose) {
-            setTimeout(() => {
+            autoCloseTimer.current = setTimeout(() => {
+                autoCloseTimer.current = undefined;
                 setIsModalOpen(false);
             }, autoclose);
-        }
-        if("canClose"  in props && props.canClose === false){
-            setCanClose(false);
         }
     }
 
     const closeModal = () => {
+        if (autoCloseTimer.current) {
+            clearTimeout(autoCloseTimer.current);
+            autoCloseTimer.current = undefined;
+        }
         setIsModalOpen(false);
     }
 

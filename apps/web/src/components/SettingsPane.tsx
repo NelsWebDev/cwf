@@ -72,11 +72,6 @@ const GeneralSettings = () => {
                 <Checkbox
                     disabled={gameStarted}
                     label="Cards With Multiple Answers" checked={rules.allowMultipleAnswerBlackCards} onChange={(e) => setRule("allowMultipleAnswerBlackCards", e.currentTarget.checked)} />
-                <Checkbox
-                    disabled={gameStarted}
-                    label="Announce to Discord"
-                    checked={rules.announceToDiscord}
-                    onChange={(e) => setRule("announceToDiscord", e.currentTarget.checked)} />
             </SimpleGrid>
             <SimpleGrid cols={2} mt="md">
                 <NativeSelect label="Score Limit"

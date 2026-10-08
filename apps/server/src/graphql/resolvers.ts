@@ -84,13 +84,11 @@ export const resolvers = {
       user.rename(trimmed);
       return user.toJSON();
     },
-    updateDiscordId: (_: unknown, { discordId }: { discordId: string }, ctx: GraphQLContext) => {
+    updateDiscordName: (_: unknown, { discordName }: { discordName: string }, ctx: GraphQLContext) => {
       const user = requireUser(ctx);
-      const trimmed = discordId.trim();
-      if (trimmed && !/^\d{17,20}$/.test(trimmed)) {
-        throw badInput("Discord user ID must be 17-20 digits");
-      }
-      user.setDiscordId(trimmed || undefined);
+      const trimmed = discordName.trim();
+      if (trimmed.length > 30) throw badInput("Discord name must be 30 characters or fewer");
+      user.setDiscordName(trimmed || undefined);
       return user.toJSON();
     },
     logout: (_: unknown, __: unknown, ctx: GraphQLContext) => {
@@ -136,12 +134,16 @@ export const resolvers = {
       game.updateRules(changes);
       return game.rules;
     },
-    startGame: async (_: unknown, __: unknown, ctx: GraphQLContext) => {
+    startGame: async (
+      _: unknown,
+      { announceToDiscord }: { announceToDiscord?: boolean },
+      ctx: GraphQLContext,
+    ) => {
       requireAccess(ctx);
       await game.start();
-      if (game.rules.announceToDiscord) {
+      if (announceToDiscord) {
         try {
-          await announceGameStart(ctx.user?.username ?? "Someone", ctx.user?.discordId);
+          await announceGameStart(socketManager.activeUsers.map((u) => u.displayName));
         } catch (error) {
           console.error("Failed to announce game start to Discord", error);
         }

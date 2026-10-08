@@ -10,7 +10,7 @@ import {
     LOGIN_MUTATION,
     LOGOUT_MUTATION,
     UPDATE_USERNAME_MUTATION,
-    UPDATE_DISCORD_ID_MUTATION,
+    UPDATE_DISCORD_NAME_MUTATION,
     MY_PROFILE_SUBSCRIPTION,
 } from "../../graphql/operations";
 import { getErrorMessage } from "../../utils";
@@ -138,10 +138,10 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
         }
     }
 
-    const updateDiscordId = async (discordId: string) => {
+    const updateDiscordName = async (discordName: string) => {
         try {
-            const { data } = await client.mutate({ mutation: UPDATE_DISCORD_ID_MUTATION, variables: { discordId } });
-            if (data) setUser(data.updateDiscordId);
+            const { data } = await client.mutate({ mutation: UPDATE_DISCORD_NAME_MUTATION, variables: { discordName } });
+            if (data) setUser(data.updateDiscordName);
             return undefined;
         } catch (error) {
             return getErrorMessage(error);
@@ -166,7 +166,7 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
         login,
         logout,
         updateUsername,
-        updateDiscordId,
+        updateDiscordName,
         kickPlayer,
         reconnect,
         errorMessage,

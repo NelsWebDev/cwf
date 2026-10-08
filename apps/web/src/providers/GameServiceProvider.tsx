@@ -89,7 +89,7 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
     const [addDeckError, setAddDeckError] = useState<string | undefined>(undefined);
     const [addedDeck, setAddedDeck] = useState<CardDeck | undefined>(undefined);
     const [allDecks, setAllDecks] = useState<CardDeck[]>([]);
-    const { showModal } = useModal();
+    const { showModal, closeModal } = useModal();
     const [playedCards, setPlayedCards] = useState<WhiteCard[]>([]);
 
     const gameStarted = useMemo(() => !!currentRound, [currentRound]);
@@ -275,7 +275,20 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
             return;
         }
 
-        mutate(START_GAME_MUTATION, undefined, "Failed to start game");
+        const start = (announceToDiscord: boolean) => {
+            closeModal();
+            mutate(START_GAME_MUTATION, { announceToDiscord }, "Failed to start game");
+        };
+        showModal({
+            title: "Post to Discord?",
+            element: (
+                <Stack>
+                    <Text>Do you want to announce this game in Discord so others can join?</Text>
+                    <Button onClick={() => start(true)}>Post to Discord</Button>
+                    <Button variant="default" onClick={() => start(false)}>Start without posting</Button>
+                </Stack>
+            ),
+        });
     }
 
     const importDeck = async (deckId: string): Promise<CardDeck | undefined> => {

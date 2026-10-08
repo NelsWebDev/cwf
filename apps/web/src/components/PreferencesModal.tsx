@@ -16,11 +16,11 @@ const selectStyles = {
 };
 
 const PreferencesModal = () => {
-  const { user, updateUsername, updateDiscordId } = useAuth();
+  const { user, updateUsername, updateDiscordName } = useAuth();
   const [username, setUsername] = useState(user?.username ?? "");
   const [error, setError] = useState<string>();
   const [saving, setSaving] = useState(false);
-  const [discordId, setDiscordId] = useState(user?.discordId ?? "");
+  const [discordName, setDiscordName] = useState(user?.discordName ?? "");
   const [discordError, setDiscordError] = useState<string>();
   const [savingDiscord, setSavingDiscord] = useState(false);
   const notificationsEnabled = useNotificationPreference();
@@ -37,10 +37,10 @@ const PreferencesModal = () => {
     setSaving(false);
   };
 
-  const trimmedDiscordId = discordId.trim();
-  const saveDiscordId = async () => {
+  const trimmedDiscordName = discordName.trim();
+  const saveDiscordName = async () => {
     setSavingDiscord(true);
-    setDiscordError(await updateDiscordId(trimmedDiscordId));
+    setDiscordError(await updateDiscordName(trimmedDiscordName));
     setSavingDiscord(false);
   };
 
@@ -70,16 +70,16 @@ const PreferencesModal = () => {
       <Group align="flex-end" wrap="nowrap">
         <TextInput
           style={{ flex: 1 }}
-          label="Discord user ID"
-          description="Optional. Lets Discord @mention you when you start a game."
-          placeholder="e.g. 123456789012345678"
-          value={discordId}
-          maxLength={20}
+          label="Discord display name"
+          description="Optional. Shown in Discord game status. Defaults to your username."
+          placeholder={user?.username}
+          value={discordName}
+          maxLength={30}
           error={discordError}
-          onChange={(e) => { setDiscordId(e.currentTarget.value); setDiscordError(undefined); }}
-          onKeyDown={(e) => { if (e.key === "Enter" && trimmedDiscordId !== (user?.discordId ?? "")) saveDiscordId(); }}
+          onChange={(e) => { setDiscordName(e.currentTarget.value); setDiscordError(undefined); }}
+          onKeyDown={(e) => { if (e.key === "Enter" && trimmedDiscordName !== (user?.discordName ?? "")) saveDiscordName(); }}
         />
-        <Button c="white" loading={savingDiscord} disabled={trimmedDiscordId === (user?.discordId ?? "")} onClick={saveDiscordId}>
+        <Button c="white" loading={savingDiscord} disabled={trimmedDiscordName === (user?.discordName ?? "")} onClick={saveDiscordName}>
           Save
         </Button>
       </Group>

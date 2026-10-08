@@ -5,7 +5,7 @@ import { User, WhiteCard } from "../types";
 export class GameUser {
   readonly id: string;
   private _username: string;
-  private _discordId?: string;
+  private _discordName?: string;
   private _isActive: boolean = false;
   private _timemoutDestroy?: NodeJS.Timeout | undefined;
   private _hand: Map<string, WhiteCard> = new Map();
@@ -33,15 +33,22 @@ export class GameUser {
     this._username = username;
     publishToUser(this.id, "myProfile", this.toJSON());
     publish("playerJoined", this.toJSON());
+    socketManager.syncDiscordPlayers();
   }
 
-  get discordId() {
-    return this._discordId;
+  get discordName() {
+    return this._discordName;
   }
 
-  setDiscordId(discordId: string | undefined) {
-    this._discordId = discordId;
+  /** Name shown in Discord status messages; falls back to the username. */
+  get displayName() {
+    return this._discordName || this._username;
+  }
+
+  setDiscordName(discordName: string | undefined) {
+    this._discordName = discordName;
     publishToUser(this.id, "myProfile", this.toJSON());
+    socketManager.syncDiscordPlayers();
   }
 
   set isActive(isActive: boolean) {
@@ -93,7 +100,7 @@ export class GameUser {
       isActive: this.isActive,
       points: game.getPoints(this.id),
       isCardCzar: game.currentCardCzar?.id === this.id,
-      discordId: this.discordId ?? null,
+      discordName: this.discordName ?? null,
       newHandsRemaining: this.newHandsRemaining,
     };
   }

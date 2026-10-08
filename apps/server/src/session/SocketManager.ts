@@ -3,6 +3,7 @@ import { RoundStatus } from "../types";
 import { GameUser } from "./GameUser";
 import { game } from "../singletons";
 import { publish } from "../pubsub";
+import { updateAnnouncedPlayers } from "../utils/discordWebhook";
 
 // Close code sent when the server ends a user's connection (kick / logout). The client does not auto-retry on it.
 export const CLOSE_CODE_DISCONNECTED = 4000;
@@ -35,6 +36,7 @@ export class SocketManager {
     this.connections.set(user.id, sockets);
     if (sockets.size === 1) {
       publish("playerJoined", user.toJSON());
+      this.syncDiscordPlayers();
     }
   }
 
@@ -50,6 +52,7 @@ export class SocketManager {
   private onLastUserDisconnect(user: GameUser) {
     user.isActive = false;
     publish("playerLeft", user.id);
+    this.syncDiscordPlayers();
     if (
       game.currentRound?.cardCzarId === user.id &&
       game.currentRound?.status === RoundStatus.WAITING_FOR_PLAYERS
@@ -61,6 +64,12 @@ export class SocketManager {
       });
       game.nextRound();
     }
+  }
+
+  syncDiscordPlayers() {
+    updateAnnouncedPlayers(this.activeUsers.map((user) => user.displayName)).catch((error) =>
+      console.error("Failed to update Discord announcement", error),
+    );
   }
 
   get activeUsers() {
