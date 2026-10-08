@@ -3,7 +3,7 @@ import { CardManager } from "../CardManager";
 import { game, socketManager } from "../singletons";
 import { subscribe, subscribeToUser } from "../pubsub";
 import { importDeck } from "../utils/cardImporter";
-import { requireUser, type GraphQLContext } from "./context";
+import { requireAccess, requireUser, type GraphQLContext } from "./context";
 import type { GameRound, Rules, WhiteCard } from "@repo/shared/types";
 
 const badInput = (message: string) =>
@@ -45,17 +45,17 @@ export const resolvers = {
   Query: {
     me: (_: unknown, __: unknown, ctx: GraphQLContext) => requireUser(ctx).toJSON(),
     players: (_: unknown, __: unknown, ctx: GraphQLContext) => {
-      requireUser(ctx);
+      requireAccess(ctx);
       return socketManager.activeUsers.map((u) => u.toJSON());
     },
     game: (_: unknown, __: unknown, ctx: GraphQLContext) => {
-      requireUser(ctx);
+      requireAccess(ctx);
       return game.toJSON();
     },
     myHand: (_: unknown, __: unknown, ctx: GraphQLContext) =>
       Array.from(requireUser(ctx).hand.values()),
     decks: (_: unknown, __: unknown, ctx: GraphQLContext) => {
-      requireUser(ctx);
+      requireAccess(ctx);
       return CardManager.fetchAllDecks();
     },
   },
@@ -75,12 +75,12 @@ export const resolvers = {
       return true;
     },
     kickPlayer: (_: unknown, { userId }: { userId: string }, ctx: GraphQLContext) => {
-      requireUser(ctx);
+      requireAccess(ctx);
       socketManager.gameUsers.get(userId)?.kick();
       return true;
     },
     importDeck: async (_: unknown, { deckId }: { deckId: string }, ctx: GraphQLContext) => {
-      requireUser(ctx);
+      requireAccess(ctx);
       try {
         return await importDeck(deckId);
       } catch (error) {
@@ -93,17 +93,17 @@ export const resolvers = {
       }
     },
     addDeck: async (_: unknown, { deckId }: { deckId: string }, ctx: GraphQLContext) => {
-      requireUser(ctx);
+      requireAccess(ctx);
       await game.addDeck(deckId);
       return true;
     },
     removeDeck: (_: unknown, { deckId }: { deckId: string }, ctx: GraphQLContext) => {
-      requireUser(ctx);
+      requireAccess(ctx);
       game.removeDeck(deckId);
       return true;
     },
     updateRules: (_: unknown, { rules }: { rules: Partial<Rules> }, ctx: GraphQLContext) => {
-      requireUser(ctx);
+      requireAccess(ctx);
       // Drop explicit nulls so omitted fields keep their current values.
       const changes = Object.fromEntries(
         Object.entries(rules).filter(([, value]) => value !== null && value !== undefined),
@@ -112,12 +112,12 @@ export const resolvers = {
       return game.rules;
     },
     startGame: async (_: unknown, __: unknown, ctx: GraphQLContext) => {
-      requireUser(ctx);
+      requireAccess(ctx);
       await game.start();
       return true;
     },
     endGame: (_: unknown, __: unknown, ctx: GraphQLContext) => {
-      requireUser(ctx);
+      requireAccess(ctx);
       game.endGame();
       return true;
     },

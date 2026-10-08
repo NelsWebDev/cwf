@@ -8,13 +8,13 @@ import { useServer } from "graphql-ws/use/ws";
 import { WebSocketServer } from "ws";
 import { httpServer, express, socketManager } from "../singletons";
 import type { GameUser } from "../session/GameUser";
-import type { GraphQLContext } from "./context";
+import { isValidApiKey, type GraphQLContext } from "./context";
 import { resolvers } from "./resolvers";
 import { typeDefs } from "./typeDefs";
 
 export const GRAPHQL_PATH = "/api/graphql";
 
-type ConnectionExtra = { user?: GameUser };
+type ConnectionExtra = { user?: GameUser; admin?: boolean };
 
 export async function startGraphQL() {
   const schema = makeExecutableSchema({ typeDefs, resolvers });
@@ -23,15 +23,20 @@ export async function startGraphQL() {
   const wsCleanup = useServer<Record<string, unknown>, ConnectionExtra>(
     {
       schema,
-      context: (ctx): GraphQLContext => ({ user: ctx.extra.user }),
+      context: (ctx): GraphQLContext => ({ user: ctx.extra.user, admin: ctx.extra.admin }),
       onConnect: (ctx) => {
-        const userId = ctx.connectionParams?.userId;
+        const params = ctx.connectionParams;
+        const userId = params?.userId ?? params?.["x-user-id"];
         const user = typeof userId === "string" ? socketManager.gameUsers.get(userId) : undefined;
-        if (!user) {
+        const admin = isValidApiKey(params?.["x-api-key"]);
+        if (!user && !admin) {
           return false;
         }
-        ctx.extra.user = user;
-        socketManager.onConnection(user, ctx.extra.socket);
+        ctx.extra.admin = admin;
+        if (user) {
+          ctx.extra.user = user;
+          socketManager.onConnection(user, ctx.extra.socket);
+        }
       },
       onClose: (ctx) => {
         if (ctx.extra.user) {
@@ -62,7 +67,10 @@ export async function startGraphQL() {
     expressMiddleware(apollo, {
       context: async ({ req }): Promise<GraphQLContext> => {
         const userId = req.header("x-user-id");
-        return { user: userId ? socketManager.gameUsers.get(userId) : undefined };
+        return {
+          user: userId ? socketManager.gameUsers.get(userId) : undefined,
+          admin: isValidApiKey(req.header("x-api-key")),
+        };
       },
     }),
   );
