@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button, Container, Grid,  Title, Stack, Box } from "@mantine/core";
 import { useAuth, useGame } from "../hooks";
 import SettingsPane from "./SettingsPane";
@@ -24,6 +25,7 @@ const RoundArea = () => {
                     <BlackCard />
                     <PlayCardButton />
                     <SelectWinnerButton />
+                    <ShareToDiscordButton />
                 </Stack>
             </Grid.Col>
             <Grid.Col span={9}>
@@ -105,6 +107,31 @@ const SelectWinnerButton = () => {
             c="white"
         >
             Select Winner
+        </Button>
+    );
+};
+
+const ShareToDiscordButton = () => {
+    const { currentRound, shareRoundToDiscord } = useGame();
+    const [sharedRoundId, setSharedRoundId] = useState<string>();
+    const [loading, setLoading] = useState(false);
+
+    if (currentRound?.status !== RoundStatus.SHOWING_WINNER) return null;
+
+    return (
+        <Button
+            size="md"
+            w="350px"
+            loading={loading}
+            disabled={sharedRoundId === currentRound.id}
+            onClick={async () => {
+                setLoading(true);
+                if (await shareRoundToDiscord()) setSharedRoundId(currentRound.id);
+                setLoading(false);
+            }}
+            c="white"
+        >
+            {sharedRoundId === currentRound.id ? "Shared to Discord" : "Share to Discord"}
         </Button>
     );
 };

@@ -160,6 +160,7 @@ export const UNDO_PLAY_MUTATION = typed<{ undoPlay: boolean }>(gql`mutation Undo
 export const PICK_WINNER_MUTATION = typed<{ pickWinner: boolean }, { cardId: string }>(gql`
   mutation PickWinner($cardId: ID!) { pickWinner(cardId: $cardId) }
 `);
+export const SHARE_ROUND_TO_DISCORD_MUTATION = typed<{ shareRoundToDiscord: boolean }>(gql`mutation ShareRoundToDiscord { shareRoundToDiscord }`);
 export const SKIP_BLACK_CARD_MUTATION = typed<{ skipBlackCard: boolean }>(gql`mutation SkipBlackCard { skipBlackCard }`);
 export const VOTE_TO_SKIP_MUTATION = typed<{ voteToSkipBlackCard: boolean }, { vote: boolean }>(gql`
   mutation VoteToSkip($vote: Boolean!) { voteToSkipBlackCard(vote: $vote) }

@@ -72,3 +72,26 @@ export async function announceGameStart(username: string) {
     announcementInProgress = false;
   }
 }
+
+export async function postImageToDiscord(image: Buffer, filename: string, content?: string) {
+  const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+  if (!webhookUrl) {
+    throw new Error("DISCORD_WEBHOOK_URL is not configured");
+  }
+
+  const form = new FormData();
+  form.append(
+    "payload_json",
+    JSON.stringify({
+      content,
+      allowed_mentions: { parse: [] },
+      attachments: [{ id: 0, filename }],
+    }),
+  );
+  form.append("files[0]", new Blob([new Uint8Array(image)], { type: "image/png" }), filename);
+
+  const response = await fetch(webhookUrl, { method: "POST", body: form });
+  if (!response.ok) {
+    throw new Error(`Discord webhook returned HTTP ${response.status}`);
+  }
+}

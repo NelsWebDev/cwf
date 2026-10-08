@@ -128,6 +128,7 @@ export const typeDefs = /* GraphQL */ `
     playCards(cards: [WhiteCardInput!]!): Boolean!
     undoPlay: Boolean!
     pickWinner(cardId: ID!): Boolean!
+    shareRoundToDiscord: Boolean!
     skipBlackCard: Boolean!
     voteToSkipBlackCard(vote: Boolean!): Boolean!
   }

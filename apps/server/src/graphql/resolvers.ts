@@ -3,9 +3,10 @@ import { CardManager } from "../CardManager";
 import { game, socketManager } from "../singletons";
 import { subscribe, subscribeToUser } from "../pubsub";
 import { importDeck } from "../utils/cardImporter";
-import { announceGameStart } from "../utils/discordWebhook";
+import { announceGameStart, postImageToDiscord } from "../utils/discordWebhook";
+import { renderRoundImage } from "../utils/roundImage";
 import { requireAccess, requireUser, type GraphQLContext } from "./context";
-import type { GameRound, Rules, WhiteCard } from "@repo/shared/types";
+import { RoundStatus, type GameRound, type Rules, type WhiteCard } from "@repo/shared/types";
 
 const badInput = (message: string) =>
   new GraphQLError(message, { extensions: { code: "BAD_USER_INPUT" } });
@@ -143,6 +144,34 @@ export const resolvers = {
     },
     pickWinner: (_: unknown, { cardId }: { cardId: string }, ctx: GraphQLContext) => {
       requireUser(ctx).selectWinner(cardId);
+      return true;
+    },
+    shareRoundToDiscord: async (_: unknown, __: unknown, ctx: GraphQLContext) => {
+      requireUser(ctx);
+      const round = game.currentRound;
+      if (!round || round.status !== RoundStatus.SHOWING_WINNER) {
+        throw new Error("There is no finished round to share");
+      }
+      if (round.sharedToDiscord) {
+        throw new Error("This round was already shared to Discord");
+      }
+      round.sharedToDiscord = true;
+      try {
+        const image = renderRoundImage({
+          blackCardText: round.blackCard.text,
+          pick: round.blackCard.pick,
+          plays: Object.entries(round.plays).map(([userId, cards]) => ({
+            username: socketManager.gameUsers.get(userId)?.username ?? "Unknown",
+            cards: cards.map((card) => card.text),
+            isWinner: userId === round.winnerId,
+          })),
+        });
+        await postImageToDiscord(image, "round.png");
+      } catch (error) {
+        round.sharedToDiscord = false;
+        console.error("Failed to share round to Discord", error);
+        throw new Error("Failed to share to Discord");
+      }
       return true;
     },
     skipBlackCard: (_: unknown, __: unknown, ctx: GraphQLContext) => {

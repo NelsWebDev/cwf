@@ -123,3 +123,43 @@ describe("announceGameStart", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
+
+describe("postImageToDiscord", () => {
+  const original = process.env.DISCORD_WEBHOOK_URL;
+  afterEach(() => {
+    if (original === undefined) delete process.env.DISCORD_WEBHOOK_URL;
+    else process.env.DISCORD_WEBHOOK_URL = original;
+    vi.unstubAllGlobals();
+  });
+
+  it("uploads the image as multipart to the configured webhook with mentions disabled", async () => {
+    process.env.DISCORD_WEBHOOK_URL = "https://discord.example/webhook";
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { postImageToDiscord } = await loadAnnouncer();
+
+    await postImageToDiscord(Buffer.from([1, 2, 3]), "round.png");
+
+    const [url, request] = fetchMock.mock.calls[0]!;
+    expect(url).toBe("https://discord.example/webhook");
+    expect(request.method).toBe("POST");
+    const form = request.body as FormData;
+    expect(JSON.parse(form.get("payload_json") as string)).toMatchObject({
+      allowed_mentions: { parse: [] },
+      attachments: [{ id: 0, filename: "round.png" }],
+    });
+    const file = form.get("files[0]") as File;
+    expect(file.name).toBe("round.png");
+    expect(file.type).toBe("image/png");
+  });
+
+  it("throws when the webhook is missing or rejects", async () => {
+    delete process.env.DISCORD_WEBHOOK_URL;
+    const { postImageToDiscord } = await loadAnnouncer();
+    await expect(postImageToDiscord(Buffer.from([1]), "r.png")).rejects.toThrow("not configured");
+
+    process.env.DISCORD_WEBHOOK_URL = "https://discord.example/webhook";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 500 })));
+    await expect(postImageToDiscord(Buffer.from([1]), "r.png")).rejects.toThrow("HTTP 500");
+  });
+});

@@ -13,6 +13,7 @@ export class GameRound implements TGameGround {
   public readonly id: string;
   status: RoundStatus = RoundStatus.WAITING_FOR_PLAYERS;
   winnerId?: string;
+  sharedToDiscord = false;
   _plays: Map<string, WhiteCard[]> = new Map();
   _votesToSkip: Map<string, boolean> = new Map();
   constructor(

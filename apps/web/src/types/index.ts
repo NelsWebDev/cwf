@@ -39,6 +39,7 @@ export type GameService = {
     setRules: (rules: Partial<Rules>) => void;
     setRule: <K extends keyof Rules>(key: K, value: Rules[K]) => void;
     skipBlackCard: () => void;
+    shareRoundToDiscord: () => Promise<boolean>;
     voteToSkipBlackCard: (vote: boolean) => void;
     playSelectedCard: () => void;
 }
