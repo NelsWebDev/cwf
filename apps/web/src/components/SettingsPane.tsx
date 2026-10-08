@@ -66,6 +66,15 @@ const GeneralSettings = () => {
                         label: i.toString()
                     }))}
                 />
+                <NativeSelect label="Win by"
+                    disabled={gameStarted}
+                    value={rules.pointsToWinBy.toString()}
+                    onChange={({ currentTarget }) => setRule("pointsToWinBy", parseInt(currentTarget.value))}
+                    data={Array.from({ length: 10 }, (_, i) => i + 1).map((i) => ({
+                        value: i.toString(),
+                        label: i.toString()
+                    }))}
+                />
                 <NativeSelect label="Player Limit"
                     value={rules.maxNumberOfPlayers.toString()}
                     disabled={gameStarted}

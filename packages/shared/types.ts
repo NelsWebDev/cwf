@@ -47,6 +47,7 @@ export type CardDeck = {
 
 export type Rules = {
     pointsToWin: number;
+    pointsToWinBy: number;
     canUndo: boolean;
     numberOfCustomCards: number;
     maxNumberOfPlayers: number;
@@ -55,6 +56,7 @@ export type Rules = {
 
 export const DEFAULT_RULES: Rules = {
     pointsToWin: 8,
+    pointsToWinBy: 1,
     canUndo: true,
     numberOfCustomCards: 0,
     maxNumberOfPlayers: 10,

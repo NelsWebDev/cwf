@@ -48,6 +48,7 @@ const DECK_FIELDS = gql`
 const RULES_FIELDS = gql`
   fragment RulesFields on Rules {
     pointsToWin
+    pointsToWinBy
     canUndo
     numberOfCustomCards
     maxNumberOfPlayers

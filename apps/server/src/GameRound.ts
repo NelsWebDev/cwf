@@ -136,9 +136,14 @@ export class GameRound implements TGameGround {
     // Wait before going on to next round so people can see the winner.
     setTimeout(() => {
       if (!game.started) return;
-      const highScore = Math.max(...Array.from(game._points.values()));
+      const scores = Array.from(game._points.values()).sort((a, b) => b - a);
+      const highScore = scores[0] ?? 0;
+      const secondPlaceScore = scores[1] ?? 0;
 
-      if (highScore >= game.rules.pointsToWin) {
+      if (
+        highScore >= game.rules.pointsToWin &&
+        highScore - secondPlaceScore >= game.rules.pointsToWinBy
+      ) {
         game.endGame();
         return; // <-- important: prevent going to nextRound
       }

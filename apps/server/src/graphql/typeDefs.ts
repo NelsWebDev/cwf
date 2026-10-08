@@ -35,6 +35,7 @@ export const typeDefs = /* GraphQL */ `
 
   type Rules {
     pointsToWin: Int!
+    pointsToWinBy: Int!
     canUndo: Boolean!
     numberOfCustomCards: Int!
     maxNumberOfPlayers: Int!
@@ -43,6 +44,7 @@ export const typeDefs = /* GraphQL */ `
 
   input RulesInput {
     pointsToWin: Int
+    pointsToWinBy: Int
     canUndo: Boolean
     numberOfCustomCards: Int
     maxNumberOfPlayers: Int
