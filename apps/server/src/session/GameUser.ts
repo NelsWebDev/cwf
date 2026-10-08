@@ -5,6 +5,7 @@ import { User, WhiteCard } from "../types";
 export class GameUser {
   readonly id: string;
   private _username: string;
+  private _discordId?: string;
   private _isActive: boolean = false;
   private _timemoutDestroy?: NodeJS.Timeout | undefined;
   private _hand: Map<string, WhiteCard> = new Map();
@@ -27,6 +28,15 @@ export class GameUser {
     this._username = username;
     publishToUser(this.id, "myProfile", this.toJSON());
     publish("playerJoined", this.toJSON());
+  }
+
+  get discordId() {
+    return this._discordId;
+  }
+
+  setDiscordId(discordId: string | undefined) {
+    this._discordId = discordId;
+    publishToUser(this.id, "myProfile", this.toJSON());
   }
 
   set isActive(isActive: boolean) {
@@ -78,6 +88,7 @@ export class GameUser {
       isActive: this.isActive,
       points: game.getPoints(this.id),
       isCardCzar: game.currentCardCzar?.id === this.id,
+      discordId: this.discordId ?? null,
     };
   }
   removeWhiteCardsFromHand(whiteCards: WhiteCard[]): WhiteCard[];

@@ -60,6 +60,18 @@ describe("announceGameStart", () => {
     });
   });
 
+  it("mentions the starter when a Discord ID is provided", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { announceGameStart } = await loadAnnouncer();
+
+    await announceGameStart("player", "123456789012345678");
+
+    const body = JSON.parse(fetchMock.mock.calls[0]![1].body);
+    expect(body.allowed_mentions).toEqual({ parse: ["everyone"], users: ["123456789012345678"] });
+    expect(body.components[0].components[1].content).toContain("<@123456789012345678>");
+  });
+
   it("limits successful announcements to one per cooldown window", async () => {
     let now = 1_000;
     vi.spyOn(Date, "now").mockImplementation(() => now);

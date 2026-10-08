@@ -4,7 +4,7 @@ const ANNOUNCEMENT_COOLDOWN_MS = 15 * 60 * 1000;
 let lastAnnouncementAt: number | undefined;
 let announcementInProgress = false;
 
-export async function announceGameStart(username: string) {
+export async function announceGameStart(username: string, discordId?: string) {
   const now = Date.now();
   if (
     announcementInProgress ||
@@ -26,6 +26,10 @@ export async function announceGameStart(username: string) {
   const webhookEndpoint = new URL(webhookUrl);
   webhookEndpoint.searchParams.set("with_components", "true");
 
+  const starter = discordId
+    ? `<@${discordId}>`
+    : `**${username.replaceAll("@", "@\u200b")}**`;
+
   announcementInProgress = true;
   try {
     const response = await fetch(webhookEndpoint, {
@@ -33,18 +37,21 @@ export async function announceGameStart(username: string) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         flags: 32768,
-        allowed_mentions: { parse: ["everyone"] },
+        allowed_mentions: {
+          parse: ["everyone"],
+          users: discordId ? [discordId] : [],
+        },
         components: [
           {
             type: 9,
             components: [
               {
                 type: 10,
-                content: "### New Cards Against Humanity Game",
+                content: "## New Cards Against Humanity Game",
               },
               {
                 type: 10,
-                content: `@here **${username.replaceAll("@", "@\u200b")}** started a game of Cards Against Humanity.`,
+                content: `${starter} started a game of Cards Against Humanity.`,
               },
               {
                 type: 10,

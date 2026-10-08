@@ -83,6 +83,15 @@ export const resolvers = {
       user.rename(trimmed);
       return user.toJSON();
     },
+    updateDiscordId: (_: unknown, { discordId }: { discordId: string }, ctx: GraphQLContext) => {
+      const user = requireUser(ctx);
+      const trimmed = discordId.trim();
+      if (trimmed && !/^\d{17,20}$/.test(trimmed)) {
+        throw badInput("Discord user ID must be 17-20 digits");
+      }
+      user.setDiscordId(trimmed || undefined);
+      return user.toJSON();
+    },
     logout: (_: unknown, __: unknown, ctx: GraphQLContext) => {
       const user = requireUser(ctx);
       user.kick();
@@ -131,7 +140,7 @@ export const resolvers = {
       await game.start();
       if (game.rules.announceToDiscord) {
         try {
-          await announceGameStart(ctx.user?.username ?? "Someone");
+          await announceGameStart(ctx.user?.username ?? "Someone", ctx.user?.discordId);
         } catch (error) {
           console.error("Failed to announce game start to Discord", error);
         }

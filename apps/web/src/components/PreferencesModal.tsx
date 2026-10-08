@@ -16,10 +16,13 @@ const selectStyles = {
 };
 
 const PreferencesModal = () => {
-  const { user, updateUsername } = useAuth();
+  const { user, updateUsername, updateDiscordId } = useAuth();
   const [username, setUsername] = useState(user?.username ?? "");
   const [error, setError] = useState<string>();
   const [saving, setSaving] = useState(false);
+  const [discordId, setDiscordId] = useState(user?.discordId ?? "");
+  const [discordError, setDiscordError] = useState<string>();
+  const [savingDiscord, setSavingDiscord] = useState(false);
   const notificationsEnabled = useNotificationPreference();
   const soundsEnabled = useNotificationSoundPreference();
   const supported = typeof Notification !== "undefined";
@@ -32,6 +35,13 @@ const PreferencesModal = () => {
     setSaving(true);
     setError(await updateUsername(trimmed));
     setSaving(false);
+  };
+
+  const trimmedDiscordId = discordId.trim();
+  const saveDiscordId = async () => {
+    setSavingDiscord(true);
+    setDiscordError(await updateDiscordId(trimmedDiscordId));
+    setSavingDiscord(false);
   };
 
   const toggleNotifications = async (enabled: boolean) => {
@@ -54,6 +64,22 @@ const PreferencesModal = () => {
           onKeyDown={(e) => { if (e.key === "Enter" && trimmed && trimmed !== user?.username) save(); }}
         />
         <Button c="white" loading={saving} disabled={!trimmed || trimmed === user?.username} onClick={save}>
+          Save
+        </Button>
+      </Group>
+      <Group align="flex-end" wrap="nowrap">
+        <TextInput
+          style={{ flex: 1 }}
+          label="Discord user ID"
+          description="Optional. Lets Discord @mention you when you start a game."
+          placeholder="e.g. 123456789012345678"
+          value={discordId}
+          maxLength={20}
+          error={discordError}
+          onChange={(e) => { setDiscordId(e.currentTarget.value); setDiscordError(undefined); }}
+          onKeyDown={(e) => { if (e.key === "Enter" && trimmedDiscordId !== (user?.discordId ?? "")) saveDiscordId(); }}
+        />
+        <Button c="white" loading={savingDiscord} disabled={trimmedDiscordId === (user?.discordId ?? "")} onClick={saveDiscordId}>
           Save
         </Button>
       </Group>

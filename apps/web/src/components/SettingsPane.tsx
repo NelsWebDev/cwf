@@ -1,9 +1,7 @@
-import { Button, Checkbox, Input, NativeSelect, PasswordInput, ScrollArea, SimpleGrid, Table, Tabs, Text, Title } from "@mantine/core";
+import { Button, Checkbox, Input, NativeSelect, ScrollArea, SimpleGrid, Table, Tabs, Text, Title } from "@mantine/core";
 import { IconPlus, IconSearch, IconX } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
-import { useQuery } from "@apollo/client/react";
 import { useAuth, useGame } from "../hooks";
-import { GAME_PASSWORD_QUERY } from "../graphql/operations";
 import PreferencesModal from "./PreferencesModal";
 
 
@@ -52,7 +50,6 @@ const SettingsPane = ({ showMySettings = false }: { showMySettings?: boolean }) 
 
 const GeneralSettings = () => {
     const { setRule, rules, gameStarted } = useGame();
-    const { data, loading, error } = useQuery(GAME_PASSWORD_QUERY);
     return (
         <>
             <SimpleGrid cols={2}>
@@ -69,15 +66,6 @@ const GeneralSettings = () => {
                     checked={rules.announceToDiscord}
                     onChange={(e) => setRule("announceToDiscord", e.currentTarget.checked)} />
             </SimpleGrid>
-            <PasswordInput
-                mt="lg"
-                label="Game password"
-                value={data?.gamePassword ?? ""}
-                readOnly
-                disabled={loading || !data?.gamePassword}
-                placeholder={loading ? "Loading password..." : "Not configured"}
-                error={error?.message}
-            />
             <SimpleGrid cols={2} mt="md">
                 <NativeSelect label="Score Limit"
                     disabled={gameStarted}
@@ -386,4 +374,4 @@ const ImportDeckSettings = () => {
   };
 
 
-export default SettingsPane;
+export default SettingsPane;

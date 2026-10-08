@@ -20,6 +20,7 @@ export const typeDefs = /* GraphQL */ `
     isActive: Boolean!
     points: Int!
     isCardCzar: Boolean!
+    discordId: String
   }
 
   type CardDeck {
@@ -119,6 +120,7 @@ export const typeDefs = /* GraphQL */ `
     login(username: String!, password: String!): User!
     logout: Boolean!
     updateUsername(username: String!): User!
+    updateDiscordId(discordId: String!): User!
     kickPlayer(userId: ID!): Boolean!
     importDeck(deckId: String!): CardDeck!
     addDeck(deckId: ID!): Boolean!

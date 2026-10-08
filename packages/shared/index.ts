@@ -4,6 +4,7 @@ export type User = {
     isActive: boolean;
     points: number;
     isCardCzar: boolean;
+    discordId?: string | null;
 }
 
 export type Game = {

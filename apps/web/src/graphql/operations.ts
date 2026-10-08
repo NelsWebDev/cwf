@@ -31,6 +31,7 @@ const USER_FIELDS = gql`
     isActive
     points
     isCardCzar
+    discordId
   }
 `;
 const DECK_FIELDS = gql`
@@ -137,6 +138,10 @@ export const LOGOUT_MUTATION = typed<{ logout: boolean }>(gql`mutation Logout { 
 export const UPDATE_USERNAME_MUTATION = typed<{ updateUsername: User }, { username: string }>(gql`
   ${USER_FIELDS}
   mutation UpdateUsername($username: String!) { updateUsername(username: $username) { ...UserFields } }
+`);
+export const UPDATE_DISCORD_ID_MUTATION = typed<{ updateDiscordId: User }, { discordId: string }>(gql`
+  ${USER_FIELDS}
+  mutation UpdateDiscordId($discordId: String!) { updateDiscordId(discordId: $discordId) { ...UserFields } }
 `);
 export const KICK_PLAYER_MUTATION = typed<{ kickPlayer: boolean }, { userId: string }>(gql`
   mutation KickPlayer($userId: ID!) { kickPlayer(userId: $userId) }
