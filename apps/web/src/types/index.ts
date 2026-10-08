@@ -1,8 +1,6 @@
 import type { ReactElement } from "react";
-import type { BlackCard, CardDeck, ClientEmittedEventFunctions, GameRound, Rules, ServerEmittedEventFunctions, ServerMessage, User, WhiteCard } from "@repo/shared/types";
-import { Socket as IOSocket } from "socket.io-client";
+import type { BlackCard, CardDeck, GameRound, Rules, ServerMessage, User, WhiteCard } from "@repo/shared/types";
 
-export type Socket = IOSocket<ServerEmittedEventFunctions, ClientEmittedEventFunctions>;
 export type AuthService = {
     login: (username: string, password: string) => void;
     logout: () => void;
@@ -10,7 +8,6 @@ export type AuthService = {
     isAuthenticating: boolean;
     errorMessage: string;
     user?: Omit<User, "isCardCzar">;
-    socket: Socket;
     disconnected: boolean;
     reconnect: () => void;
     kickPlayer: (userId: string) => void;

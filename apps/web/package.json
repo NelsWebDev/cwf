@@ -13,13 +13,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@apollo/client": "^4.3.2",
     "@mantine/core": "^7.17.5",
     "@mantine/hooks": "^7.17.5",
+    "@repo/shared": "workspace:*",
     "@tabler/icons-react": "^3.31.0",
+    "graphql": "^16.14.2",
+    "graphql-ws": "^6.3.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "socket.io-client": "^4.8.3",
-    "@repo/shared": "workspace:*"
+    "rxjs": "^7.8.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

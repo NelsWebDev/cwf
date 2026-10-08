@@ -1,7 +1,18 @@
 import type { Dispatch, ReactElement, SetStateAction} from "react"
 import { useEffect, useMemo, useState } from "react";
-import type { CardDeck, DEFAULT_RULES, GameRound, GameService, RoundStatus, Rules, User, WhiteCard } from "../types";
-import { useAuth, useModal } from "../hooks";
+import { DEFAULT_RULES, RoundStatus } from "../types";
+import type { CardDeck, GameRound, GameService, Rules, User, WhiteCard } from "../types";
+import { useApolloClient, useQuery, useSubscription } from "@apollo/client/react";
+import { useAuth, useModal, useMutate } from "../hooks";
+import {
+    ADD_DECK_MUTATION, DECKS_QUERY, DECKS_SUBSCRIPTION, END_GAME_MUTATION, GAME_ENDED_SUBSCRIPTION, GAME_QUERY,
+    GAME_SUBSCRIPTION, GIVEN_CARDS_SUBSCRIPTION, HOLD_GAME_SUBSCRIPTION, IMPORT_DECK_MUTATION, KICK_PLAYER_MUTATION,
+    MY_HAND_QUERY, MY_HAND_SUBSCRIPTION, PICK_WINNER_MUTATION, PLAY_CARDS_MUTATION, PLAYER_JOINED_SUBSCRIPTION,
+    PLAYER_LEFT_SUBSCRIPTION, REMOVE_DECK_MUTATION, RULES_SUBSCRIPTION, SKIP_BLACK_CARD_MUTATION, START_GAME_MUTATION,
+    UNDO_PLAY_MUTATION, UPDATE_RULES_MUTATION, VOTE_TO_SKIP_MUTATION, WINNER_SELECTED_SUBSCRIPTION, toGame,
+} from "../graphql/operations";
+import type { GqlGame } from "../graphql/operations";
+import { getErrorMessage } from "../utils";
 import { Button, Input, Stack, Text } from "@mantine/core";
 import { GameServiceContext } from "./Contexts";
 import { isURL } from "../utils";
@@ -65,7 +76,9 @@ const CustomCardModal = ({ setSelectedWhiteCard, setPlayedCards, selectedWhiteCa
 
 const GameServiceProvider = ({ children }: { children: ReactElement }) => {
 
-    const { socket, user } = useAuth();
+    const { user } = useAuth();
+    const client = useApolloClient();
+    const mutate = useMutate();
 
     const [players, setPlayers] = useState<User[]>([]);
     const [rules, setRules] = useState<Rules>({ ...DEFAULT_RULES });
@@ -124,54 +137,105 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
     }, [playedCards.length, currentRound?.status, currentBlackCard?.pick]);
 
 
+    const applyGame = (game: GqlGame) => {
+        const { rules, players, decks, currentRound } = toGame(game);
+        setCardDecks(decks);
+        setRules(rules);
+        setPlayers(players);
+        setCurrentRound(currentRound);
+    }
+
+    // Initial state. Live changes arrive through the subscriptions below.
+    const { data: gameData } = useQuery(GAME_QUERY);
+    const { data: handData } = useQuery(MY_HAND_QUERY);
+    const { data: allDecksData, error: allDecksError } = useQuery(DECKS_QUERY);
+
     useEffect(() => {
-        socket.emit("getGame");
-        socket.emit("myHand");
-        socket.on('players', (data: User[]) => {
-            setPlayers(data);
-        });
-        socket.on('rules', (data: Rules) => {
-            setRules(data);
-        });
-        socket.on('decks', (decks) => {
-            setCardDecks(decks);
-        });
+        if (gameData) applyGame(gameData.game);
+    }, [gameData]);
 
-        socket.on("playerJoined", (data: User) => {
-            setPlayers((prev) => [...prev, data]);
-        });
-        socket.on("playerLeft", (userId: string) => {
-            setPlayers((prev) => prev.filter((p) => p.id !== userId));
-        });
-        socket.on("myHand", (hand: WhiteCard[]) => {
-            setMyHand(hand);
-            console.log(hand);
-        });
-        socket.on("game", ({ rules, players, decks, currentRound }) => {
-            setCardDecks(decks);
-            setRules(rules);
-            setPlayers(players);
-            setCurrentRound(currentRound);
-        });
+    useEffect(() => {
+        if (handData) setMyHand(handData.myHand);
+    }, [handData]);
 
-        socket.on("givenCards", (cards: WhiteCard[]) => {
-            setMyHand(prev => [...prev, ...cards]);
-        });
-        socket.on("rules", (rules: Rules) => {
-            setRules(rules);
-        });
+    useEffect(() => {
+        if (allDecksData) setAllDecks(allDecksData.decks);
+    }, [allDecksData]);
 
-        socket.on("gameEnded", (username) => {
+    useEffect(() => {
+        if (allDecksError) {
+            showModal({ title: "Error", message: "Failed to fetch decks", autoclose: 3_000 });
+        }
+    }, [allDecksError]);
+
+    const subscriptionOptions = { fetchPolicy: "no-cache" } as const;
+
+    useSubscription(GAME_SUBSCRIPTION, {
+        ...subscriptionOptions,
+        onData: ({ data }) => data.data && applyGame(data.data.game),
+    });
+    useSubscription(RULES_SUBSCRIPTION, {
+        ...subscriptionOptions,
+        onData: ({ data }) => data.data && setRules(data.data.rules),
+    });
+    useSubscription(DECKS_SUBSCRIPTION, {
+        ...subscriptionOptions,
+        onData: ({ data }) => data.data && setCardDecks(data.data.decks),
+    });
+    useSubscription(PLAYER_JOINED_SUBSCRIPTION, {
+        ...subscriptionOptions,
+        onData: ({ data }) => {
+            const joined = data.data?.playerJoined;
+            if (joined) {
+                setPlayers((prev) => [...prev.filter((p) => p.id !== joined.id), joined]);
+            }
+        },
+    });
+    useSubscription(PLAYER_LEFT_SUBSCRIPTION, {
+        ...subscriptionOptions,
+        onData: ({ data }) => {
+            const userId = data.data?.playerLeft;
+            if (userId) {
+                setPlayers((prev) => prev.filter((p) => p.id !== userId));
+            }
+        },
+    });
+    useSubscription(MY_HAND_SUBSCRIPTION, {
+        ...subscriptionOptions,
+        onData: ({ data }) => data.data && setMyHand(data.data.myHand),
+    });
+    useSubscription(GIVEN_CARDS_SUBSCRIPTION, {
+        ...subscriptionOptions,
+        onData: ({ data }) => {
+            const cards = data.data?.givenCards;
+            if (cards) {
+                setMyHand(prev => [...prev, ...cards]);
+            }
+        },
+    });
+    useSubscription(GAME_ENDED_SUBSCRIPTION, {
+        ...subscriptionOptions,
+        onData: ({ data }) => {
+            if (!data.data) return;
+            const username = data.data.gameEnded;
             setSelectedWhiteCard(undefined);
             setMyHand([]);
             showModal({ title: "Game ended", message: "The game has ended" + (username ? ` and ${username} won` : ""), element: <></>, autoclose: 3_000 });
-        });
-
-        socket.on("holdGame", () => {
-            showModal({ title: "Game on hold", element: <NotEnoughPlayers endGame={endGame} />, canClose: false });
-        });
-
-        socket.on("winnerSelected", (czarId) => {
+        },
+    });
+    useSubscription(HOLD_GAME_SUBSCRIPTION, {
+        ...subscriptionOptions,
+        onData: ({ data }) => {
+            if (data.data) {
+                showModal({ title: "Game on hold", element: <NotEnoughPlayers endGame={endGame} />, canClose: false });
+            }
+        },
+    });
+    useSubscription(WINNER_SELECTED_SUBSCRIPTION, {
+        ...subscriptionOptions,
+        onData: ({ data }) => {
+            const czarId = data.data?.winnerSelected;
+            if (!czarId) return;
             setCurrentRound((prev) => {
                 return {
                     ...prev as GameRound,
@@ -190,27 +254,11 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
                     return player;
                 });
             });
-        });
-
-        return () => {
-            socket.off('players');
-            socket.off('rules');
-            socket.off('decks');
-            socket.off("playerJoined");
-            socket.off("playerLeft");
-            socket.off("game");
-            socket.off("rules");
-            socket.off("myHand");
-            socket.off("givenCards");
-            socket.off("winnerSelected");
-        }
-
-
-
-    }, [socket.connected]);
+        },
+    });
 
     const setRule = <K extends keyof Rules>(key: K, value: Rules[K]) => {
-        socket.emit("updateRules", { [key]: value });
+        mutate(UPDATE_RULES_MUTATION, { rules: { [key]: value } });
     }
 
     const startGame = () => {
@@ -227,7 +275,7 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
             return;
         }
 
-        socket.emit("startGame");
+        mutate(START_GAME_MUTATION, undefined, "Failed to start game");
     }
 
     const importDeck = (deckId: string) => {
@@ -243,46 +291,35 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
         }
 
         setAddDeckError(undefined);
-        fetch("/api/decks/import", {
-            method: "POST",
-            body: JSON.stringify({
-                deckId: formattedID,
-            }),
-            headers: {
-                "Content-Type": "application/json",
-            }
-        }).then((response) => {
-            if (response.ok || response.status === 500) {
-                response.json().then((data) => {
-                    if (data.error) {
-                        setAddDeckError(data.error);
-                        return;
-                    }
-                    setAddedDeck(data.deck);
-                    const alreadyAdded = allDecks.find((deck) => deck.id === data.deck.id);
-                    if (!alreadyAdded) {
-                        setAllDecks((prev) => {
-                            const newDecks = [...prev, data.deck];
-                            return newDecks;
-                        });
-                    }
-                });
-            }
-        });
+        client.mutate({ mutation: IMPORT_DECK_MUTATION, variables: { deckId: formattedID } })
+            .then(({ data }) => {
+                const deck = data?.importDeck;
+                if (!deck) {
+                    return;
+                }
+                setAddedDeck(deck);
+                setAllDecks((prev) => prev.some((d) => d.id === deck.id) ? prev : [...prev, deck]);
+            })
+            .catch((error) => setAddDeckError(getErrorMessage(error)));
     }
     const endGame = () => {
-        socket.emit("endGame");
+        mutate(END_GAME_MUTATION);
     }
 
     const playCards = (cards: WhiteCard[]) => {
-        socket.emit("playCards", cards);
         setPlayedCards(cards);
+        mutate(PLAY_CARDS_MUTATION, { cards: cards.map(({ id, text }) => ({ id, text })) }).then((result) => {
+            if (!result) {
+                setPlayedCards([]);
+                setSelectedWhiteCard(undefined);
+            }
+        });
     }
 
     const undoPlay = () => {
         setPlayedCards([]);
         setSelectedWhiteCard(undefined);
-        socket.emit("undoPlay");
+        mutate(UNDO_PLAY_MUTATION);
     }
 
     const realPlays = useMemo(() => {
@@ -298,21 +335,8 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
     useMemo(() => {
         setPlayedCards([]);
     }, [currentRound?.status]);
-    useMemo(() => {
-        fetch("/api/decks").then((response) => {
-            if (response.ok) {
-                response.json().then((data: CardDeck[]) => {
-                    setAllDecks(data);
-                });
-            }
-            else {
-                showModal({ title: "Error", message: "Failed to fetch decks", autoclose: 3_000 });
-            }
-        });
-    }, [])
-
     const pickWinner = (cardId: string) => {
-        socket.emit("pickWinner", cardId);
+        mutate(PICK_WINNER_MUTATION, { cardId });
     }
 
     const value: GameService = {
@@ -334,18 +358,18 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
         importDeck,
         setRule,
         setSelectedWhiteCard,
-        addDeck: socket.emit.bind(socket, "addDeck"),
-        removeDeck: socket.emit.bind(socket, "removeDeck"),
+        addDeck: (deckId: string) => { mutate(ADD_DECK_MUTATION, { deckId }); },
+        removeDeck: (deckId: string) => { mutate(REMOVE_DECK_MUTATION, { deckId }); },
         startGame,
         endGame,
-        kickPlayer: socket.emit.bind(socket, "kickPlayer"),
+        kickPlayer: (userId: string) => { mutate(KICK_PLAYER_MUTATION, { userId }); },
         undoPlay,
         pickWinner,
         playSelectedCard,
         playedCards,
-        setRules: (rules: Partial<Rules>) => socket.emit("updateRules", rules),
-        skipBlackCard: () => socket.emit("skipBlackCard"),
-        voteToSkipBlackCard: () => socket.emit("voteToSkipBlackCard", true),
+        setRules: (rules: Partial<Rules>) => { mutate(UPDATE_RULES_MUTATION, { rules }); },
+        skipBlackCard: () => { mutate(SKIP_BLACK_CARD_MUTATION); },
+        voteToSkipBlackCard: () => { mutate(VOTE_TO_SKIP_MUTATION, { vote: true }); },
     }
 
 

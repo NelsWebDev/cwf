@@ -1,13 +1,7 @@
 import {config as loadEnv} from "dotenv";
 import { createServer as createHttpServer } from "http";
-import { Server as SocketServer } from "socket.io";
 import { PrismaClient } from "@prisma/client";
 import Express from "express";
-import {
-  ClientEmittedEventFunctions,
-  ServerEmittedEventFunctions,
-} from "@repo/shared/types";
-import { GameUser } from "./session/GameUser";
 import { SocketManager } from "./session/SocketManager";
 import { Game } from "./Game";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -18,18 +12,6 @@ loadEnv({ path: envLocation });
 
 export const express = Express();
 export const httpServer = createHttpServer(express);
-export const ioServer = new SocketServer<
-  ClientEmittedEventFunctions,
-  ServerEmittedEventFunctions,
-  object,
-  GameUser
->(httpServer, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
-});
-
 
 export const prismaClient = new PrismaClient({adapter: new PrismaPg(process.env.DATABASE_URL!)});
 export const socketManager = new SocketManager();
@@ -38,7 +20,6 @@ export const game = new Game();
 export default {
   express,
   httpServer,
-  ioServer,
   prismaClient,
   socketManager,
   game,

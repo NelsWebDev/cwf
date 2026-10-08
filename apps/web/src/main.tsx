@@ -6,6 +6,8 @@ import AuthServiceProvider from './providers/auth/AuthServiceProvider.tsx'
 import "@mantine/core/styles.css"
 import GameServiceProvider from './providers/GameServiceProvider.tsx'
 import ModalServiceProvider from './providers/ModalServiceProvider.tsx'
+import { ApolloProvider } from '@apollo/client/react'
+import { apolloClient } from './graphql/client.ts'
 
 const theme = createTheme({
   fontFamily: 'Roboto, sans-serif',
@@ -63,13 +65,15 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ColorSchemeScript defaultColorScheme='auto'/>
     <MantineProvider theme={theme} defaultColorScheme='auto' >
-      <AuthServiceProvider>
-      <ModalServiceProvider>
-        <GameServiceProvider>
-          <App />
-        </GameServiceProvider>
-      </ModalServiceProvider>
-      </AuthServiceProvider>
+      <ApolloProvider client={apolloClient}>
+        <AuthServiceProvider>
+        <ModalServiceProvider>
+          <GameServiceProvider>
+            <App />
+          </GameServiceProvider>
+        </ModalServiceProvider>
+        </AuthServiceProvider>
+      </ApolloProvider>
     </MantineProvider>
   </StrictMode>,
 )

@@ -88,60 +88,9 @@ export type WhiteCard = {
     updatedAt: Date;
 }
 
-type ClientEmittedEvents = {
-    "kickPlayer": string;
-    "playCards": WhiteCard[];
-    "pickWinner": string;
-    "logout": void;
-    "addDeck": string;
-    "removeDeck": string;
-    "updateRules": Partial<Rules>;
-    "startGame": void;
-    "endGame": void;
-    "getPlayers": void;
-    "getGame": void;
-    "myHand": void;
-    "skipBlackCard": void;
-    "voteToSkipBlackCard": boolean;
-    "undoPlay": void;
-}
-
-type ServerEmittedEvents = {
-
-    "myProfile": User;
-    "myHand": WhiteCard[];
-    "playerJoined": User;
-    "playerLeft": string;
-    "players": User[];
-    "rules": Rules;
-    "decks": CardDeck[];
-    "game": Game;
-    "serverMessage": ServerMessage;
-    "givenCards": WhiteCard[];
-    "playerPlayed": User['id'];
-    "gameEnded": User['username'];
-    "closeModal": void;
-    "holdGame": void;
-    "winnerSelected": User['id'];
-}
 export type ServerMessage = {
     title?: string;
     message: string;
     autoclose?: number;
     canClose?: boolean;
-}
-
-export type LoginResponse = {
-    success: boolean;
-    user?: User;
-    error?: string;
-}
-
-
-export type ClientEmittedEventFunctions = {
-    [K in keyof ClientEmittedEvents]: ClientEmittedEvents[K] extends void ? () => void : (arg: ClientEmittedEvents[K]) => void;
-}
-
-export type ServerEmittedEventFunctions = {
-    [K in keyof ServerEmittedEvents]: ServerEmittedEvents[K] extends void ? () => void : (arg: ServerEmittedEvents[K]) => void;
 }

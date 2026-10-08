@@ -1,4 +1,5 @@
-import { game, ioServer, socketManager } from "../singletons";
+import { game, socketManager } from "../singletons";
+import { publish, publishToUser } from "../pubsub";
 import { User, WhiteCard } from "../types";
 
 export class GameUser {
@@ -38,7 +39,7 @@ export class GameUser {
       console.log(`User ${this.username} is inactive`);
 
       if (socketManager.activeUsers.length < 3 && game?.started) {
-        ioServer.emit("holdGame");
+        publish("holdGame", true);
       }
 
       this._timemoutDestroy = setTimeout(() => {
@@ -56,22 +57,8 @@ export class GameUser {
     return this._isActive;
   }
 
-  async fetchSockets() {
-    return this.room.fetchSockets();
-  }
-
-  async disconnect() {
-    const sockets = await this.fetchSockets();
-    for (const socket of sockets) {
-      socket.disconnect();
-    }
-  }
-
-  async kick() {
-    const sockets = await this.fetchSockets();
-    for (const socket of sockets) {
-      socket.disconnect();
-    }
+  kick() {
+    socketManager.closeConnections(this.id);
   }
 
   valueOf() {
@@ -102,7 +89,7 @@ export class GameUser {
         this._hand.delete(whiteCard.id);
       }
     }
-    this.room.emit("myHand", Array.from(this.hand.values()));
+    publishToUser(this.id, "myHand", Array.from(this.hand.values()));
     return Array.from(this.hand.values());
   }
 
@@ -121,10 +108,6 @@ export class GameUser {
     return game.currentRound?.selectWinner(winningCardId);
   }
 
-  get room() {
-    return ioServer.to(this.id);
-  }
-
   get hand() {
     return this._hand;
   }
@@ -132,10 +115,7 @@ export class GameUser {
     for (const whiteCard of whiteCards) {
       this._hand.set(whiteCard.id, whiteCard);
     }
-    this.room.emit("givenCards", whiteCards);
-  }
-  async emitMyHand() {
-    this.room.emit("myHand", Array.from(this.hand.values()));
+    publishToUser(this.id, "givenCards", whiteCards);
   }
   clearHand() {
     this._hand.clear();

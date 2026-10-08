@@ -1,63 +1,55 @@
-import { ExtendedError } from "socket.io";
-import { ClientEmittedEventFunctions, RoundStatus, Socket } from "../types";
+import type { WebSocket } from "ws";
+import { RoundStatus } from "../types";
 import { GameUser } from "./GameUser";
-import { game, ioServer } from "../singletons";
-import { AllEventHandlers } from "../events";
+import { game } from "../singletons";
+import { publish } from "../pubsub";
+
+// Close code sent when the server ends a user's connection (kick / logout). The client does not auto-retry on it.
+export const CLOSE_CODE_DISCONNECTED = 4000;
 
 export class SocketManager {
   gameUsers: Map<string, GameUser> = new Map();
-  constructor() {
-    this.middleware = this.middleware.bind(this);
-  }
-  middleware(socket: Socket, next: (err?: ExtendedError) => void) {
-    const userId = socket.handshake.auth.userId;
-    if (!userId) {
-      return next(new Error("Authentication error"));
-    }
+  private connections: Map<string, Set<WebSocket>> = new Map();
 
-    const user = this.gameUsers.get(userId);
-    if (!user) {
-      return next(new Error("Invalid session. Please login again"));
-    }
-
-    socket.data = user;
-    return next();
-  }
   async kickByUserId(userId: string) {
-    const user = this.gameUsers.get(userId);
-    if (!user) {
-      return;
+    this.gameUsers.get(userId)?.kick();
+  }
+
+  closeConnections(userId: string) {
+    for (const socket of this.connections.get(userId) ?? []) {
+      socket.close(CLOSE_CODE_DISCONNECTED, "Disconnected by server");
     }
-    return user.kick();
   }
 
   userIsOnline(userId: string) {
-    const user = this.gameUsers.get(userId);
-    return this.gameUsers.get(userId)?.isActive ?? false
+    return this.gameUsers.get(userId)?.isActive ?? false;
   }
 
-  public async onSocketConnection(socket: Socket) {
-    const user = socket.data;
-
+  onConnection(user: GameUser, socket: WebSocket) {
     if (this.activeUsers.length < 3) {
-      ioServer.emit("closeModal");
+      publish("closeModal", true);
     }
     user.isActive = true;
-    await socket.join(user.id);
-    const sockets = await user.fetchSockets();
-    if (sockets.length === 1) {
-      socket.broadcast.emit("playerJoined", user.toJSON());
+    const sockets = this.connections.get(user.id) ?? new Set();
+    sockets.add(socket);
+    this.connections.set(user.id, sockets);
+    if (sockets.size === 1) {
+      publish("playerJoined", user.toJSON());
     }
-    socket.emit("myProfile", user.toJSON());
-    this.registerEventHandlers(socket);
-    socket.on("disconnect", () => {
-      this.onUserDisconnect(user);
-    });
+  }
+
+  onDisconnection(user: GameUser, socket: WebSocket) {
+    const sockets = this.connections.get(user.id);
+    sockets?.delete(socket);
+    if (!sockets || sockets.size === 0) {
+      this.connections.delete(user.id);
+      this.onLastUserDisconnect(user);
+    }
   }
 
   private onLastUserDisconnect(user: GameUser) {
     user.isActive = false;
-    ioServer.emit("playerLeft", user.id);
+    publish("playerLeft", user.id);
     if (
       game.currentRound?.cardCzarId === user.id &&
       game.currentRound?.status === RoundStatus.WAITING_FOR_PLAYERS
@@ -68,13 +60,6 @@ export class SocketManager {
         }
       });
       game.nextRound();
-    }
-  }
-
-  private async onUserDisconnect(user: GameUser) {
-    const sockets = await user.fetchSockets();
-    if (sockets.length === 0) {
-      this.onLastUserDisconnect(user);
     }
   }
 
@@ -99,26 +84,5 @@ export class SocketManager {
     const newUser = new GameUser(username);
     this.gameUsers.set(newUser.id, newUser);
     return newUser;
-  }
-
-  registerEventHandlers(socket: Socket) {
-    for (const [handlerName, handler] of Object.entries(AllEventHandlers)) {
-      const unfixedEventName = handlerName.replace(/^on/, "");
-      const realEventName = (unfixedEventName.charAt(0).toLowerCase() +
-        unfixedEventName.slice(1)) as keyof ClientEmittedEventFunctions;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      socket.on(realEventName, (...args: any[]) => {
-        try {
-          // @ts-expect-error already typed
-          handler(socket, ...args);
-        } catch (error) {
-          socket.emit("serverMessage", {
-            title: "Whoops!",
-            message: error instanceof Error ? `${error.message}` : typeof error == "string" ? error : "An unknown error occurred",
-          });
-          console.error(`Error in event handler ${handlerName}:`, error);
-        }
-      });
-    }
   }
 }

@@ -7,3 +7,6 @@ export const isURL = (str:string) => {
     return false;
   }
 }
+
+export const getErrorMessage = (error: unknown) =>
+  error instanceof Error && error.message ? error.message : "An unknown error occurred";

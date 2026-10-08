@@ -1,13 +1,13 @@
-import { ReactElement, useEffect, useState } from "react";
+import { ReactElement, useState } from "react";
 import { ModalService,  ShowModalProps } from "../types";
 import { Modal, Text } from "@mantine/core";
-import { useAuth } from "../hooks";
+import { useSubscription } from "@apollo/client/react";
+import { CLOSE_MODAL_SUBSCRIPTION } from "../graphql/operations";
 import { ModalServiceContext } from "./Contexts";
 
 
 const ModalServiceProvider = ({children} : {children: React.ReactNode}) => {
 
-    const {socket}  = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [title, setTitle] = useState("");
     const [message, setMessage] = useState<string|ReactElement>("");
@@ -15,19 +15,13 @@ const ModalServiceProvider = ({children} : {children: React.ReactNode}) => {
     const [element, setElement] = useState<ReactElement|undefined>(undefined);
 
 
-    useEffect( () => {
-        socket.on("closeModal", () => {
+    useSubscription(CLOSE_MODAL_SUBSCRIPTION, {
+        fetchPolicy: "no-cache",
+        onData: () => {
             setIsModalOpen(false);
             setCanClose(true);
-        });
-        socket.on("serverMessage", (message) => {
-            showModal(message);
-        });
-        return () => {
-            socket.off("closeModal");
-            socket.off("serverMessage");
-        }
-    }, [socket]);
+        },
+    });
 
     const showModal = (props: ShowModalProps ) => {
         const {title, autoclose} = props;

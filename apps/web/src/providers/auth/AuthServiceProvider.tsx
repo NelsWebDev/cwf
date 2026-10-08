@@ -1,112 +1,139 @@
-import { type ReactElement, useEffect, useMemo, useState } from "react";
-import type { AuthService, LoginResponse, Socket, User } from "../../types";
-import { io } from "socket.io-client";
+import { type ReactElement, useEffect, useRef, useState } from "react";
+import { useApolloClient } from "@apollo/client/react";
+import type { Subscription } from "rxjs";
+import type { AuthService, User } from "../../types";
 import LoginPage from "./LoginPage";
 import { AuthServiceContext } from "../Contexts";
+import { CLOSE_CODE_FORBIDDEN, USER_ID_KEY, closeCodeOf, wsClient } from "../../graphql/client";
+import {
+    KICK_PLAYER_MUTATION,
+    LOGIN_MUTATION,
+    LOGOUT_MUTATION,
+    MY_PROFILE_SUBSCRIPTION,
+} from "../../graphql/operations";
+import { getErrorMessage } from "../../utils";
 
 
 const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
+    const client = useApolloClient();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isAuthenticating, setIsAuthenticating] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [user, setUser] = useState<Omit<User, "isCardCzar">>();
-    const socket: Socket = useMemo(() => io("", {
-        autoConnect: localStorage.getItem("userId") ? true : false,
-        auth: { userId: localStorage.getItem("userId") || "" },
-    }), []);
     const [disconnected, setDisconnected] = useState(false);
+    const connection = useRef<Subscription | undefined>(undefined);
+    // Set while we are deliberately closing the connection so the close isn't reported as a disconnect.
+    const closingOnPurpose = useRef(false);
+
+    // The profile subscription doubles as the session connection: the websocket is open while it is active.
+    const connect = () => {
+        connection.current?.unsubscribe();
+        closingOnPurpose.current = false;
+        connection.current = client
+            .subscribe({ query: MY_PROFILE_SUBSCRIPTION, fetchPolicy: "no-cache" })
+            .subscribe({
+                next: ({ data }) => {
+                    if (data) setUser(data.myProfile);
+                },
+                error: () => {
+                    // Reported through the websocket client's "closed" event.
+                },
+            });
+    }
+
+    const disconnect = () => {
+        closingOnPurpose.current = true;
+        connection.current?.unsubscribe();
+        connection.current = undefined;
+    }
 
     useEffect(() => {
-        if (user?.id) {
-            localStorage.setItem("userId", user.id);
+        const offConnected = wsClient.on("connected", () => {
+            console.log("connected to server");
+            setIsAuthenticated(true);
+            setIsAuthenticating(false);
+            setDisconnected(false);
+            setErrorMessage("");
+        });
+        const offClosed = wsClient.on("closed", (event) => {
+            if (closingOnPurpose.current) {
+                return;
+            }
+            setIsAuthenticated(false);
+            setIsAuthenticating(false);
+            if (closeCodeOf(event) === CLOSE_CODE_FORBIDDEN) {
+                localStorage.removeItem(USER_ID_KEY);
+                setUser(undefined);
+                setErrorMessage("Invalid session. Please login again");
+                return;
+            }
+            setDisconnected(true);
+            setErrorMessage("Disconnected from server");
+        });
+
+        if (localStorage.getItem(USER_ID_KEY)) {
+            connect();
         }
 
-    }, [user?.id]);
+        return () => {
+            offConnected();
+            offClosed();
+            connection.current?.unsubscribe();
+            connection.current = undefined;
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const login = async (username: string, password: string) => {
         setIsAuthenticating(true);
         setErrorMessage("");
         try {
-            const res = await fetch("/api/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ username, password }),
-            });
-            if (res.status === 200) {
-                const data: LoginResponse = await res.json();
-                setUser(data.user);
-                socket.auth = { userId: data.user?.id };
-                socket.connect();
-            } else {
-                const data = await res.json();
-                setErrorMessage(data.error);
-                setIsAuthenticated(false);
-                setIsAuthenticating(false);
+            const { data } = await client.mutate({ mutation: LOGIN_MUTATION, variables: { username, password } });
+            if (!data) {
+                throw new Error("Login failed");
             }
+            setUser(data.login);
+            localStorage.setItem(USER_ID_KEY, data.login.id);
+            connect();
         }
-        catch {
+        catch (error) {
             setIsAuthenticated(false);
             setIsAuthenticating(false);
             if (!navigator.onLine) {
                 setErrorMessage("Network error: Please check your internet connection");
             }
             else {
-                setErrorMessage("An unknown error occurred. Please try again");
+                setErrorMessage(getErrorMessage(error));
             }
         }
     }
 
-    useEffect(() => {
-        socket.on("myProfile", setUser);
-        socket.on("connect", () => {
-            console.log("connected to socket");
-            setIsAuthenticated(true);
-            setIsAuthenticating(false);
-            setErrorMessage("");
-        });
-        socket.on("connect_error", (err) => {
-            setErrorMessage(err.message);
-            setIsAuthenticated(false);
-            setIsAuthenticating(false);
-            localStorage.removeItem("userId");
-        });
-        socket.on('disconnect', () => {
-            setIsAuthenticated(false);
-            setIsAuthenticating(false);
-            setDisconnected(true);
-            setErrorMessage("Disconnected from server");
-        });
-
-        return () => {
-            socket.off("myProfile");
-            socket.off("connect");
-            socket.off("connect_error");
-            socket.off("players");
-            socket.off("playerJoined");
-            socket.off("playerLeft");
-            socket.off("serverMessage");
+    const logout = async () => {
+        closingOnPurpose.current = true;
+        try {
+            await client.mutate({ mutation: LOGOUT_MUTATION });
         }
-    }, [socket]);
-
-    const logout = () => {
-        socket.emit("logout");
-        socket.disconnect();
+        catch (error) {
+            console.error("Failed to log out", error);
+        }
+        disconnect();
         setIsAuthenticated(false);
         setIsAuthenticating(false);
+        setDisconnected(false);
         setUser(undefined);
-        localStorage.removeItem("userId");
+        localStorage.removeItem(USER_ID_KEY);
         setErrorMessage("You are logged out");
     }
 
     const kickPlayer = (userId: string) => {
-        socket.emit("kickPlayer", userId);
+        client.mutate({ mutation: KICK_PLAYER_MUTATION, variables: { userId } }).catch((error) => {
+            console.error("Failed to kick player", error);
+        });
     }
 
     const reconnect = () => {
-        socket.auth = { userId: localStorage.getItem("userId") || "" };
-        socket.connect();
+        setIsAuthenticating(true);
+        connect();
     }
 
     const value: AuthService = {
@@ -119,7 +146,6 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
         reconnect,
         errorMessage,
         user,
-        socket,
     }
     return (
         <AuthServiceContext.Provider value={value}>

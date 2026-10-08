@@ -1,7 +1,8 @@
 import { CardManager } from "./CardManager";
 import { GameRound } from "./GameRound";
 import { GameUser } from "./session/GameUser";
-import { ioServer, prismaClient, socketManager } from "./singletons";
+import { prismaClient, socketManager } from "./singletons";
+import { publish } from "./pubsub";
 import {
   BlackCard,
   CardDeck,
@@ -34,7 +35,7 @@ export class Game {
       throw new Error("Deck not found");
     }
     this.addedDecks.push(deck);
-    ioServer.emit("decks", this.addedDecks);
+    publish("decks", this.addedDecks);
   }
   removeDeck(deckId: string) {
     if (this.started) {
@@ -45,14 +46,14 @@ export class Game {
       return;
     }
     this.addedDecks.splice(index, 1);
-    ioServer.emit("decks", this.addedDecks);
+    publish("decks", this.addedDecks);
   }
   updateRules(rules: Partial<Rules>) {
     if (this.started) {
       throw new Error("Game already started");
     }
     this.rules = { ...this.rules, ...rules };
-    ioServer.emit("rules", this.rules);
+    publish("rules", this.rules);
   }
 
   async start() {
@@ -89,7 +90,7 @@ export class Game {
     const blackCard = this.drawBlackCard();
     this.moveToNextCzar();
     this._currentRound = new GameRound(blackCard, this.currentCardCzar);
-    ioServer.emit("game", this.toJSON());
+    publish("game", this.toJSON());
   }
 
   private shuffleWhiteCardsWithAddedCustoms(cards: WhiteCard[]) {
@@ -137,8 +138,8 @@ export class Game {
     socketManager.gameUsers.forEach((user) => {
       user.clearHand();
     });
-    ioServer.emit("gameEnded", winningPlayer?.username || "");
-    ioServer.emit("game", this.toJSON());
+    publish("gameEnded", winningPlayer?.username || "");
+    publish("game", this.toJSON());
   }
 
   winningPlayer() {
@@ -340,7 +341,7 @@ export class Game {
     }
 
     this._currentRound = new GameRound(blackCard, cardCzar);
-    ioServer.emit("game", this.toJSON());
+    publish("game", this.toJSON());
   }
 
   nextRound() {
@@ -358,10 +359,10 @@ export class Game {
     this.moveToNextCzar();
     const blackCard = this.drawBlackCard();
     this._currentRound = new GameRound(blackCard, this.currentCardCzar);
-    ioServer.emit("game", this.toJSON());
+    publish("game", this.toJSON());
   }
 
   emitJSON() {
-    ioServer.emit("game", this.toJSON());
+    publish("game", this.toJSON());
   }
 }

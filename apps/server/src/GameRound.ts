@@ -1,5 +1,6 @@
 import { GameUser } from "./session/GameUser";
-import { game, ioServer, socketManager } from "./singletons";
+import { game, socketManager } from "./singletons";
+import { publish } from "./pubsub";
 import {
   BlackCard,
   GameRound as TGameGround,
@@ -129,7 +130,7 @@ export class GameRound implements TGameGround {
 
     this.winnerId = userId;
     this.status = RoundStatus.SHOWING_WINNER;
-    ioServer.emit("winnerSelected", this.winnerId);
+    publish("winnerSelected", this.winnerId);
     this.blackCard.state = CardState.PLAYED_PREVIOUSLY;
 
     // Wait before going on to next round so people can see the winner.
