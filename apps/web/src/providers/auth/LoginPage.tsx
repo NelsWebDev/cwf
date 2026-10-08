@@ -22,7 +22,7 @@ const LoginPage = () => {
         fontWeight: 900,
         color: 'light-dark(black, var(--mantine-color-white))',
       }}>
-        Welcome Back Bitches!
+        Sup You Fuka!
       </Title>
       <Paper withBorder shadow="md" p={30} mt={30} radius="md" styles={{
         root: {
