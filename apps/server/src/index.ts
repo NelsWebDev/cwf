@@ -2,10 +2,12 @@ import { config as loadEnv } from "dotenv";
 import { express, httpServer, ioServer, prismaClient, socketManager } from "./singletons";
 import ApiRouter from "./api/routes";
 import cors from "cors";
-import path from "path";
 loadEnv({
   path: "../../.env"
-})
+});
+
+
+
 const HTTP_PORT = process.env.HTTP_PORT || 3000;
 
 
@@ -22,6 +24,10 @@ express.use(
 );
 express.use("/api", ApiRouter);
 
+express.get("/domain", (req, res) => {
+  res.send(req.hostname);
+});
+
 ioServer.use(socketManager.middleware);
 
 ioServer.on("connection", (socket) => {
@@ -32,3 +38,4 @@ prismaClient.$connect().then(() => {
 }).catch((error:Error) => {
   console.log(error);
 });
+

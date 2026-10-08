@@ -6,7 +6,7 @@ import {
   WhiteCard,
   RoundStatus,
   CardState,
-} from "./types";
+} from "@repo/shared/types";
 
 export class GameRound implements TGameGround {
   public readonly id: string;

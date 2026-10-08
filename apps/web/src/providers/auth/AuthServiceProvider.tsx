@@ -1,5 +1,5 @@
-import { ReactElement, useEffect, useMemo, useState } from "react";
-import { AuthService, LoginResponse, Socket, User } from "../../types";
+import { type ReactElement, useEffect, useMemo, useState } from "react";
+import type { AuthService, LoginResponse, Socket, User } from "../../types";
 import { io } from "socket.io-client";
 import LoginPage from "./LoginPage";
 import { AuthServiceContext } from "../Contexts";

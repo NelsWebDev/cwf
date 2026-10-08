@@ -69,7 +69,7 @@ export const importDeck = async (deckCode: string) => {
   if (!response.ok) {
     throw new Error(`Failed to fetch deck: ${response.statusText}`);
   }
-  const json: OriginalDeckFormat = await response.json();
+  const json: OriginalDeckFormat = await response.json() as OriginalDeckFormat;
   if (! (json.name && "description" in json && Array.isArray(json.calls) && Array.isArray(json.responses))) {
     throw new Error("Invalid deck format from URL");
   }

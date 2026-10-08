@@ -1,7 +1,7 @@
 import { Card, Image, Text } from "@mantine/core";
 import classes from "../styles/WhiteCard.module.css";
 import {  useGame } from "../hooks";
-import { WhiteCard as TWhiteCard, User } from "../types";
+import { WhiteCard as TWhiteCard, User } from "@repo/shared/types";
 import { useMemo } from "react";
 
 type WhiteCardProps = {

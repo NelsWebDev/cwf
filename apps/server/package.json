@@ -7,18 +7,21 @@
   "author": "Nels Romerdahl <7355705+NelsWebDev@users.noreply.github.com>",
   "scripts": {
     "start": "NODE_ENV=production tsx src/index.ts",
+    "build": "tsc",
     "import:cah": "tsx src/scripts/cahImporter.ts",
     "import:custom": "tsx src/scripts/importCustomDeck.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "@repo/shared": "workspace:*",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "http": "^0.0.1-security",
     "socket.io": "^4.8.1",
-    "tsx": "^4.19.3"
+    "tsx": "^4.19.3",
+    "vite-express": "^0.22.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.5",

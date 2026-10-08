@@ -10,7 +10,7 @@ import {
   Rules,
   Game as TGame,
   WhiteCard,
-} from "./types";
+} from "@repo/shared/types";
 
 export class Game {
   started: boolean = false;

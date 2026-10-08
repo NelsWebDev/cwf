@@ -18,7 +18,7 @@ const urlToJSON = async <T extends object>(url: string): Promise<T> => {
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
     }
-    return response.json();
+    return response.json() as T;
 };
 
 const BATCH_SIZE = 100;

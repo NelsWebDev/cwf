@@ -1,5 +1,5 @@
-import { ReactElement } from "react";
-import { BlackCard, CardDeck, ClientEmittedEventFunctions, GameRound, Rules, ServerEmittedEventFunctions, ServerMessage, User, WhiteCard } from "./shared";
+import type { ReactElement } from "react";
+import type { BlackCard, CardDeck, ClientEmittedEventFunctions, GameRound, Rules, ServerEmittedEventFunctions, ServerMessage, User, WhiteCard } from "@repo/shared/types";
 import { Socket as IOSocket } from "socket.io-client";
 
 export type Socket = IOSocket<ServerEmittedEventFunctions, ClientEmittedEventFunctions>;
@@ -56,4 +56,4 @@ export type ShowModalProps = ServerMessage | (Omit<ServerMessage, "message"> & {
     element: ReactElement
 })
 
-export * from "./shared";
+export * from "@repo/shared/types";

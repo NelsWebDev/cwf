@@ -1,9 +1,9 @@
 import { Prisma } from "@prisma/client";
-import { GameUser } from "../session/GameUser";
+import { GameUser } from "./session/GameUser";
 import {
   ClientEmittedEventFunctions,
   ServerEmittedEventFunctions,
-} from "./shared";
+} from "@repo/shared/types";
 import { Socket as IOSocket } from "socket.io";
 
 export type Socket = IOSocket<
@@ -32,4 +32,4 @@ export type PopulatedDeck = Prisma.DeckGetPayload<{
   };
 }>;
 
-export * from "./shared";
+export * from "@repo/shared/types";

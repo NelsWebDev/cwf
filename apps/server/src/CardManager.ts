@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prismaClient } from "./singletons";
-import { CardDeck, CardState, WhiteCard } from "./types";
+import { CardDeck, CardState, WhiteCard } from "@repo/shared/types";
 
 type PopulatedDeck = Prisma.DeckGetPayload<{
   include: {
@@ -36,6 +36,7 @@ export class CardManager {
     } = deck;
     return {
       ...data,
+      importedDeckId: data.importedDeckId ?? undefined,
       description: description ?? undefined,
       numberOfBlackCards: blackCards,
       numberOfWhiteCards: whiteCards,

@@ -6,12 +6,11 @@ import Express from "express";
 import {
   ClientEmittedEventFunctions,
   ServerEmittedEventFunctions,
-} from "./types/shared";
+} from "@repo/shared/types";
 import { GameUser } from "./session/GameUser";
 import { SocketManager } from "./session/SocketManager";
 import { Game } from "./Game";
 import { PrismaPg } from "@prisma/adapter-pg";
-import path from "path";
 
 loadEnv();
 

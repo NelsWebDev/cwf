@@ -1,5 +1,6 @@
-import { Dispatch, ReactElement, SetStateAction, useEffect, useMemo, useState } from "react";
-import { CardDeck, DEFAULT_RULES, GameRound, GameService, RoundStatus, Rules, User, WhiteCard } from "../types";
+import type { Dispatch, ReactElement, SetStateAction} from "react"
+import { useEffect, useMemo, useState } from "react";
+import type { CardDeck, DEFAULT_RULES, GameRound, GameService, RoundStatus, Rules, User, WhiteCard } from "../types";
 import { useAuth, useModal } from "../hooks";
 import { Button, Input, Stack, Text } from "@mantine/core";
 import { GameServiceContext } from "./Contexts";
