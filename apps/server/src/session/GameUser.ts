@@ -23,6 +23,12 @@ export class GameUser {
     return this._username;
   }
 
+  rename(username: string) {
+    this._username = username;
+    publishToUser(this.id, "myProfile", this.toJSON());
+    publish("playerJoined", this.toJSON());
+  }
+
   set isActive(isActive: boolean) {
     // nothing has changed
     if (this._isActive === isActive) {

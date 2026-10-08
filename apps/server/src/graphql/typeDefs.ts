@@ -118,6 +118,7 @@ export const typeDefs = /* GraphQL */ `
   type Mutation {
     login(username: String!, password: String!): User!
     logout: Boolean!
+    updateUsername(username: String!): User!
     kickPlayer(userId: ID!): Boolean!
     importDeck(deckId: String!): CardDeck!
     addDeck(deckId: ID!): Boolean!

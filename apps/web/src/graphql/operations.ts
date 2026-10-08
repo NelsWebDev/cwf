@@ -134,6 +134,10 @@ export const LOGIN_MUTATION = typed<{ login: User }, { username: string; passwor
   mutation Login($username: String!, $password: String!) { login(username: $username, password: $password) { ...UserFields } }
 `);
 export const LOGOUT_MUTATION = typed<{ logout: boolean }>(gql`mutation Logout { logout }`);
+export const UPDATE_USERNAME_MUTATION = typed<{ updateUsername: User }, { username: string }>(gql`
+  ${USER_FIELDS}
+  mutation UpdateUsername($username: String!) { updateUsername(username: $username) { ...UserFields } }
+`);
 export const KICK_PLAYER_MUTATION = typed<{ kickPlayer: boolean }, { userId: string }>(gql`
   mutation KickPlayer($userId: ID!) { kickPlayer(userId: $userId) }
 `);

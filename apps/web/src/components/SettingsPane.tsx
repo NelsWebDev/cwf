@@ -4,13 +4,14 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import { useAuth, useGame } from "../hooks";
 import { GAME_PASSWORD_QUERY } from "../graphql/operations";
+import PreferencesModal from "./PreferencesModal";
 
 
 
-const SettingsPane = () => {
+const SettingsPane = ({ showMySettings = false }: { showMySettings?: boolean }) => {
 
     return (
-        <Tabs defaultValue="general"
+        <Tabs defaultValue={showMySettings ? "my" : "general"}
             styles={{
                 tab: {
                     background: "light-dark(inherit, var(--mantine-color-dark-3))",
@@ -18,6 +19,7 @@ const SettingsPane = () => {
             }}
         >
             <Tabs.List>
+                {showMySettings && <Tabs.Tab value="my">My Settings</Tabs.Tab>}
                 <Tabs.Tab value="general">
                     Rules
                 </Tabs.Tab>
@@ -25,6 +27,11 @@ const SettingsPane = () => {
                 <Tabs.Tab value="import">Import Deck</Tabs.Tab>
                 <Tabs.Tab value="players">Players</Tabs.Tab>
             </Tabs.List>
+            {showMySettings && (
+                <Tabs.Panel value="my" pt="lg">
+                    <PreferencesModal />
+                </Tabs.Panel>
+            )}
             <Tabs.Panel value="general" pt="lg">
                 <GeneralSettings />
             </Tabs.Panel>
@@ -379,4 +386,4 @@ const ImportDeckSettings = () => {
   };
 
 
-export default SettingsPane;
+export default SettingsPane;

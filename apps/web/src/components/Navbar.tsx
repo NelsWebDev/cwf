@@ -1,9 +1,8 @@
-import { IconCardsFilled, IconLogout,  IconSettingsFilled, IconStar } from '@tabler/icons-react';
+import { IconCardsFilled, IconLogout, IconSettingsFilled, IconStar } from '@tabler/icons-react';
 import { Button, Container, CSSProperties, Group, Modal } from '@mantine/core';
 import { useAuth, useGame } from '../hooks';
 import SettingsPane from './SettingsPane';
 import { useState } from 'react';
-import ThemeSelector from './ThemeSelector';
 
 const navButtonStyle: CSSProperties = {
   color: 'var(--mantine-color-white)',
@@ -21,7 +20,7 @@ export function HeaderMenu() {
         opened={opened} onClose={() =>
 
           setOpened(false)} title="Settings" centered>
-        <SettingsPane />
+        <SettingsPane showMySettings />
       </Modal>)}
       <header style={{
         height: "56px",
@@ -57,7 +56,6 @@ export function HeaderMenu() {
                 size="md" leftSection={<IconSettingsFilled size={16} />} onClick={show}>
                 Settings
               </Button>
-              <ThemeSelector/>
               <Button size="md" style={navButtonStyle} leftSection={<IconLogout size={16} />} color="red" onClick={logout}>
                 Logout
               </Button>
@@ -67,4 +65,4 @@ export function HeaderMenu() {
       </header>
     </>
   );
-}
+}

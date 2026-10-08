@@ -74,6 +74,15 @@ export const resolvers = {
       if (!socketManager.usernameAvailable(username)) throw badInput("Username already in use");
       return socketManager.registerUser(username).toJSON();
     },
+    updateUsername: (_: unknown, { username }: { username: string }, ctx: GraphQLContext) => {
+      const user = requireUser(ctx);
+      const trimmed = username.trim();
+      if (!trimmed) throw badInput("Username is required");
+      if (trimmed.length > 30) throw badInput("Username must be 30 characters or fewer");
+      if (!socketManager.usernameAvailable(trimmed, user.id)) throw badInput("Username already in use");
+      user.rename(trimmed);
+      return user.toJSON();
+    },
     logout: (_: unknown, __: unknown, ctx: GraphQLContext) => {
       const user = requireUser(ctx);
       user.kick();

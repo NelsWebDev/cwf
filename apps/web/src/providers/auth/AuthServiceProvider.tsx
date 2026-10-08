@@ -9,6 +9,7 @@ import {
     KICK_PLAYER_MUTATION,
     LOGIN_MUTATION,
     LOGOUT_MUTATION,
+    UPDATE_USERNAME_MUTATION,
     MY_PROFILE_SUBSCRIPTION,
 } from "../../graphql/operations";
 import { getErrorMessage } from "../../utils";
@@ -125,6 +126,17 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
         setErrorMessage("You are logged out");
     }
 
+    // Resolves to an error message, or undefined on success.
+    const updateUsername = async (username: string) => {
+        try {
+            const { data } = await client.mutate({ mutation: UPDATE_USERNAME_MUTATION, variables: { username } });
+            if (data) setUser(data.updateUsername);
+            return undefined;
+        } catch (error) {
+            return getErrorMessage(error);
+        }
+    }
+
     const kickPlayer = (userId: string) => {
         client.mutate({ mutation: KICK_PLAYER_MUTATION, variables: { userId } }).catch((error) => {
             console.error("Failed to kick player", error);
@@ -142,6 +154,7 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
         disconnected,
         login,
         logout,
+        updateUsername,
         kickPlayer,
         reconnect,
         errorMessage,

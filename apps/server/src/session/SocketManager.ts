@@ -71,9 +71,9 @@ export class SocketManager {
     return [...Array.from(this.gameUsers.values())];
   }
 
-  usernameAvailable(username: string) {
+  usernameAvailable(username: string, exceptUserId?: string) {
     return !this.usersArray.some(
-      (user) => user.username.toLowerCase() === username.toLowerCase(),
+      (user) => user.id !== exceptUserId && user.username.toLowerCase() === username.toLowerCase(),
     );
   }
 

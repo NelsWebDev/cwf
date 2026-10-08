@@ -4,6 +4,7 @@ import type { BlackCard, CardDeck, GameRound, Rules, ServerMessage, User, WhiteC
 export type AuthService = {
     login: (username: string, password: string) => void;
     logout: () => void;
+    updateUsername: (username: string) => Promise<string | undefined>;
     isAuthenticated: boolean;
     isAuthenticating: boolean;
     errorMessage: string;
