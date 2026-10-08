@@ -75,7 +75,7 @@ const WhiteCard = (props: WhiteCardProps) => {
             top: "4px",
             right: "8px",
             opacity: 0.7,
-            color: selected ? "white" : "inheirt",
+            color: selected ? "white" : "inherit",
           }}
           size="xl"
         >
@@ -115,7 +115,7 @@ const WhiteCard = (props: WhiteCardProps) => {
             textAlign: "center",
           }}
         >
-          <Text span inherit c={!selected ? "inherit" : "white"}>
+          <Text span inherit style={{ color: selected ? "white" : "inherit" }}>
             {text ? text : isCustom ? "__________" : ""}
           </Text>
         </div>

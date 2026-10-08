@@ -28,7 +28,9 @@ const BlackCard = () => {
             MozUserSelect: "none",
             userSelect: "none",
             msUserSelect: "none",
-            overflow: 'scroll',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
         }}>
             <Card.Section withBorder inheritPadding >
                 <Group justify="space-between">
@@ -49,12 +51,13 @@ const BlackCard = () => {
                 </Group>
             </Card.Section>
 
-            <Center style={{height: '100%'}}>
-            <Text mt="sm" size="sm" span inherit c="white"
+            <Center style={{flex: 1, minHeight: 0, overflowY: 'auto'}}>
+            <Text mt="sm" size="sm" span inherit
                 style={{
-                    overflow: "scroll",
+                    color: 'white',
                     fontSize: '1.8rem',
                     lineHeight: '1.8rem',
+                    maxHeight: '100%',
                 }}
             >
                 <TextWithLineBreaks text={text} />
