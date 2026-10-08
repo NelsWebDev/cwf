@@ -11,11 +11,8 @@ export const reimportCustomDecks = async () => {
     const outDatedDecks = await prismaClient.deck.findMany({
         select: { importedDeckId: true, name: true },
         where: {
-            importedDeckId: {
-                not: {
-                    startsWith: "CAH-",
-                },
-            },
+            cahOfficial: false,
+            importedDeckId: { not: null },
             updatedAt: {
                 lte: sinceDate,
             }

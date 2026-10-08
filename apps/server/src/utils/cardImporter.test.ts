@@ -27,6 +27,7 @@ describe("parseDeckToPrismaCreate", () => {
       name: "Example deck",
       description: "A description",
       importedDeckId: "ABCDE",
+      cahOfficial: false,
       blackCards: {
         create: [
           { blackCard: { create: { text: "I love _________ cats", pick: 1 } } },

@@ -131,10 +131,10 @@ const DeckSettings = () => {
     }
         , [allDecks, cardDecks, deckInput]);
     const availableCustomDecks = useMemo(() => {
-        return allAvailablelDecks.filter((deck) => !deck.importedDeckId?.startsWith("CAH"));
+        return allAvailablelDecks.filter((deck) => !deck.cahOfficial);
     }, [allAvailablelDecks]);
     const availableStandardDecks = useMemo(() => {
-        return allAvailablelDecks.filter((deck) => deck.importedDeckId?.startsWith("CAH"));
+        return allAvailablelDecks.filter((deck) => deck.cahOfficial);
     }, [allAvailablelDecks]);
 
 

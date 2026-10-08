@@ -40,6 +40,7 @@ model Deck {
   name           String  @db.Text
   description    String? @db.Text
   importedDeckId String?
+  cahOfficial    Boolean @default(false)
 
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt

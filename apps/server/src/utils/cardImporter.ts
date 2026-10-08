@@ -27,6 +27,7 @@ export const parseDeckToPrismaCreate = (deck: OriginalDeckFormat) : Prisma.DeckC
     name: deck.name,
     description: deck.description,
     importedDeckId: deck.watermark,
+    cahOfficial: false,
     blackCards: {create: blackCards.map((blackCard) => ({ blackCard: { create: blackCard } }))},
     whiteCards: {create: deck.responses.map((response) => ({
       whiteCard: { create: { text: response.text[0] } },
@@ -69,6 +70,7 @@ export const importDeck = async (deckCode: string) => {
   const existingDeck = await prismaClient.deck.findFirst({
     where: {
       importedDeckId: deck.importedDeckId,
+      cahOfficial: false,
     },
   });
 

@@ -42,6 +42,7 @@ export type CardDeck = {
     numberOfWhiteCards: number;
     numberOfBlackCards: number;
     importedDeckId?: string;
+    cahOfficial: boolean;
     createdAt: Date;
     updatedAt: Date;
 }

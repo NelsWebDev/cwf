@@ -43,6 +43,7 @@ const DECK_FIELDS = gql`
     numberOfWhiteCards
     numberOfBlackCards
     importedDeckId
+    cahOfficial
     createdAt
     updatedAt
   }

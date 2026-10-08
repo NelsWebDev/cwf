@@ -31,6 +31,7 @@ export const typeDefs = /* GraphQL */ `
     numberOfWhiteCards: Int!
     numberOfBlackCards: Int!
     importedDeckId: String
+    cahOfficial: Boolean!
     createdAt: DateTime!
     updatedAt: DateTime!
   }

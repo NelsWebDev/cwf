@@ -147,6 +147,7 @@ describe("Game", () => {
     const deck = {
       id: "deck-1",
       name: "Test deck",
+      cahOfficial: false,
       numberOfBlackCards: 1,
       numberOfWhiteCards: 10,
       createdAt: new Date(0),
@@ -187,6 +188,7 @@ describe("Game", () => {
       {
         id: "deck-1",
         name: "Test deck",
+        cahOfficial: false,
         numberOfBlackCards: 1,
         numberOfWhiteCards: 10,
         createdAt: new Date(0),
@@ -292,6 +294,7 @@ describe("Game", () => {
       {
         id: "deck-1",
         name: "Test deck",
+        cahOfficial: false,
         numberOfBlackCards: 3,
         numberOfWhiteCards: 32,
         createdAt: new Date(0),
