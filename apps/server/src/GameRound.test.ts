@@ -375,4 +375,110 @@ describe("GameRound", () => {
     expect(round.votesToSkip[voters[0]!.id]).toBe(false);
     expect(mocks.game.skipBlackCard).not.toHaveBeenCalled();
   });
+
+  describe("sitting out", () => {
+    it("excludes the player from the round and does not wait for their cards", () => {
+      const [one, two, three] = [addUser("one", [makeCard("a")]), addUser("two", [makeCard("b")]), addUser("three")];
+      const round = makeRound();
+
+      round.sitOut(three.id);
+      round.playWhiteCards(one.id, [makeCard("a")]);
+      round.playWhiteCards(two.id, [makeCard("b")]);
+      vi.advanceTimersByTime(5_000);
+
+      expect(round.sittingOut).toEqual([three.id]);
+      expect(round.status).toBe(RoundStatus.SELECTING_WINNER);
+      expect(round.toJSON().sittingOut).toEqual([three.id]);
+    });
+
+    it("awards the round to a player who already played once everyone else sits out", () => {
+      const [one, two] = [addUser("one", [makeCard("a")]), addUser("two")];
+      const round = makeRound();
+      addUser("three");
+      round.playWhiteCards(one.id, [makeCard("a")]);
+
+      round.sitOut(two.id);
+      expect(round.status).toBe(RoundStatus.WAITING_FOR_PLAYERS);
+      round.sitOut("three");
+      expect(round.winnerId).toBe(one.id);
+    });
+
+    it("automatically awards the round to the only remaining player", () => {
+      const one = addUser("one");
+      const two = addUser("two");
+      const round = makeRound();
+
+      round.sitOut(two.id);
+
+      expect(round.status).toBe(RoundStatus.SHOWING_WINNER);
+      expect(round.winnerId).toBe(one.id);
+      expect(mocks.points.get(one.id)).toBe(1);
+      expect(mocks.publish).toHaveBeenCalledWith("winnerSelected", one.id);
+    });
+
+    it("moves on to the next round after an automatic win", () => {
+      addUser("one");
+      const two = addUser("two");
+      mocks.game.started = true;
+      const round = makeRound();
+
+      round.sitOut(two.id);
+      vi.advanceTimersByTime(8_000);
+
+      expect(mocks.game.nextRound).toHaveBeenCalledOnce();
+    });
+
+    it("does not auto-win while two or more players remain", () => {
+      addUser("one");
+      addUser("two");
+      const three = addUser("three");
+      const round = makeRound();
+
+      round.sitOut(three.id);
+
+      expect(round.winnerId).toBeUndefined();
+      expect(round.status).toBe(RoundStatus.WAITING_FOR_PLAYERS);
+    });
+
+    it("prevents sitting-out players from playing or voting", () => {
+      addUser("one");
+      addUser("two");
+      const three = addUser("three");
+      const round = makeRound();
+      round.sitOut(three.id);
+
+      expect(() => round.playWhiteCards(three.id, [])).toThrow("sitting out");
+      expect(() => round.voteToSkip(three.id, true)).toThrow("sitting out");
+    });
+
+    it("drops the sitting-out player's skip vote and ignores them in the threshold", () => {
+      const voters = [addUser("one"), addUser("two"), addUser("three"), addUser("four")];
+      const round = makeRound();
+      round.voteToSkip(voters[3]!.id, true);
+
+      round.sitOut(voters[3]!.id);
+      expect(round.votesToSkip[voters[3]!.id]).toBeUndefined();
+
+      round.voteToSkip(voters[0]!.id, true);
+      expect(mocks.game.skipBlackCard).not.toHaveBeenCalled();
+      round.voteToSkip(voters[1]!.id, true);
+      expect(mocks.game.skipBlackCard).toHaveBeenCalledOnce();
+    });
+
+    it("rejects invalid sit-outs", () => {
+      const one = addUser("one", [makeCard("a")]);
+      addUser("two");
+      addUser("three");
+      const round = makeRound();
+
+      expect(() => round.sitOut("missing")).toThrow("User not found");
+      expect(() => round.sitOut("czar")).toThrow("Card czar cannot sit out");
+      round.playWhiteCards(one.id, [makeCard("a")]);
+      expect(() => round.sitOut(one.id)).toThrow("Undo your play");
+      round.sitOut("two");
+      expect(() => round.sitOut("two")).toThrow("Already sitting out");
+      round.status = RoundStatus.SELECTING_WINNER;
+      expect(() => round.sitOut("three")).toThrow("Cannot sit out in this phase");
+    });
+  });
 });

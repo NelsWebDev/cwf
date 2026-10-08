@@ -9,6 +9,7 @@ export class GameUser {
   private _isActive: boolean = false;
   private _timemoutDestroy?: NodeJS.Timeout | undefined;
   private _hand: Map<string, WhiteCard> = new Map();
+  newHandsUsed = 0;
 
   constructor(username: string) {
     this.id = crypto.randomUUID();
@@ -18,6 +19,10 @@ export class GameUser {
       const cards = game.drawWhiteCards(10);
       this._hand = new Map(cards.map((card) => [card.id, card]));
     }
+  }
+
+  get newHandsRemaining() {
+    return Math.max(0, (game.rules?.newHandsPerGame ?? 0) - this.newHandsUsed);
   }
 
   get username() {
@@ -89,6 +94,7 @@ export class GameUser {
       points: game.getPoints(this.id),
       isCardCzar: game.currentCardCzar?.id === this.id,
       discordId: this.discordId ?? null,
+      newHandsRemaining: this.newHandsRemaining,
     };
   }
   removeWhiteCardsFromHand(whiteCards: WhiteCard[]): WhiteCard[];
@@ -134,7 +140,12 @@ export class GameUser {
     }
     publishToUser(this.id, "givenCards", whiteCards);
   }
+  replaceHand(whiteCards: WhiteCard[]) {
+    this._hand = new Map(whiteCards.map((card) => [card.id, card]));
+    publishToUser(this.id, "myHand", Array.from(this._hand.values()));
+  }
   clearHand() {
     this._hand.clear();
+    this.newHandsUsed = 0;
   }
 }

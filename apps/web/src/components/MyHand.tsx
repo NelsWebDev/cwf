@@ -9,6 +9,7 @@ const MyHand = () => {
   const { user } = useAuth();
   const isCardCzar = currentRound?.cardCzarId === user?.id;
   const [opened, setOpened] = useState(!isCardCzar);
+  const sittingOut = !!user && !!currentRound?.sittingOut.includes(user.id);
   const playedCardIds = playedCards.map((card) => card.id);
 
   const filteredHand = myHand.filter((card) => !playedCardIds.includes(card.id));
@@ -46,8 +47,8 @@ const MyHand = () => {
                     key={card.id}
                     data={card}
                     selected={selectedWhiteCard?.id === card.id}
-                    animate={!isCardCzar && currentRound?.status === RoundStatus.WAITING_FOR_PLAYERS}
-                    disabled={isCardCzar || currentRound?.status !== RoundStatus.WAITING_FOR_PLAYERS}
+                    animate={!isCardCzar && !sittingOut && currentRound?.status === RoundStatus.WAITING_FOR_PLAYERS}
+                    disabled={isCardCzar || sittingOut || currentRound?.status !== RoundStatus.WAITING_FOR_PLAYERS}
                   />
                 ))}
               </Box>

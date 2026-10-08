@@ -160,6 +160,10 @@ export const resolvers = {
       requireUser(ctx).undoPlay();
       return true;
     },
+    requestNewHand: (_: unknown, __: unknown, ctx: GraphQLContext) => {
+      game.requestNewHand(requireUser(ctx).id);
+      return true;
+    },
     pickWinner: (_: unknown, { cardId }: { cardId: string }, ctx: GraphQLContext) => {
       requireUser(ctx).selectWinner(cardId);
       return true;
@@ -169,6 +173,9 @@ export const resolvers = {
       const round = game.currentRound;
       if (!round || round.status !== RoundStatus.SHOWING_WINNER) {
         throw new Error("There is no finished round to share");
+      }
+      if (!Object.values(round.plays).some((cards) => cards.length > 0)) {
+        throw new Error("This round has no played cards to share");
       }
       if (round.sharedToDiscord) {
         throw new Error("This round was already shared to Discord");

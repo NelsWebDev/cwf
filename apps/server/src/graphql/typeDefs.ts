@@ -21,6 +21,7 @@ export const typeDefs = /* GraphQL */ `
     points: Int!
     isCardCzar: Boolean!
     discordId: String
+    newHandsRemaining: Int!
   }
 
   type CardDeck {
@@ -39,6 +40,7 @@ export const typeDefs = /* GraphQL */ `
     pointsToWinBy: Int!
     canUndo: Boolean!
     numberOfCustomCards: Int!
+    newHandsPerGame: Int!
     maxNumberOfPlayers: Int!
     allowMultipleAnswerBlackCards: Boolean!
     announceToDiscord: Boolean!
@@ -49,6 +51,7 @@ export const typeDefs = /* GraphQL */ `
     pointsToWinBy: Int
     canUndo: Boolean
     numberOfCustomCards: Int
+    newHandsPerGame: Int
     maxNumberOfPlayers: Int
     allowMultipleAnswerBlackCards: Boolean
     announceToDiscord: Boolean
@@ -97,6 +100,7 @@ export const typeDefs = /* GraphQL */ `
     winnerId: ID
     plays: [Play!]!
     votesToSkip: [SkipVote!]!
+    sittingOut: [ID!]!
   }
 
   type Game {
@@ -130,6 +134,7 @@ export const typeDefs = /* GraphQL */ `
     endGame: Boolean!
     playCards(cards: [WhiteCardInput!]!): Boolean!
     undoPlay: Boolean!
+    requestNewHand: Boolean!
     pickWinner(cardId: ID!): Boolean!
     shareRoundToDiscord: Boolean!
     skipBlackCard: Boolean!

@@ -5,6 +5,7 @@ export type User = {
     points: number;
     isCardCzar: boolean;
     discordId?: string | null;
+    newHandsRemaining: number;
 }
 
 export type Game = {
@@ -33,6 +34,7 @@ export type GameRound = {
     votesToSkip: {
         [key: string]: boolean;
     }
+    sittingOut: string[];
 }
 
 export type CardDeck = {
@@ -51,6 +53,7 @@ export type Rules = {
     pointsToWinBy: number;
     canUndo: boolean;
     numberOfCustomCards: number;
+    newHandsPerGame: number;
     maxNumberOfPlayers: number;
     allowMultipleAnswerBlackCards: boolean;
     announceToDiscord: boolean;
@@ -61,6 +64,7 @@ export const DEFAULT_RULES: Rules = {
     pointsToWinBy: 1,
     canUndo: true,
     numberOfCustomCards: 0,
+    newHandsPerGame: 0,
     maxNumberOfPlayers: 10,
     allowMultipleAnswerBlackCards: true,
     announceToDiscord: true,

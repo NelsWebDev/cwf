@@ -105,6 +105,16 @@ const GeneralSettings = () => {
                         label: i.toString()
                     }))}
                 />
+                <NativeSelect label="New Hands Per Player"
+                    description="Sit out a round for a brand new hand (0 disables)"
+                    value={rules.newHandsPerGame.toString()}
+                    disabled={gameStarted}
+                    onChange={({currentTarget}) => setRule("newHandsPerGame", parseInt(currentTarget.value ?? "0"))}
+                    data={Array.from({ length: 6 }, (_, i) => i).map((i) => ({
+                        value: i.toString(),
+                        label: i.toString()
+                    }))}
+                />
             </SimpleGrid>
         </>
     )

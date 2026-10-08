@@ -32,6 +32,7 @@ const USER_FIELDS = gql`
     points
     isCardCzar
     discordId
+    newHandsRemaining
   }
 `;
 const DECK_FIELDS = gql`
@@ -52,6 +53,7 @@ const RULES_FIELDS = gql`
     pointsToWinBy
     canUndo
     numberOfCustomCards
+    newHandsPerGame
     maxNumberOfPlayers
     allowMultipleAnswerBlackCards
     announceToDiscord
@@ -108,6 +110,7 @@ const GAME_FIELDS = gql`
         userId
         vote
       }
+      sittingOut
     }
   }
 `;
@@ -166,6 +169,7 @@ export const PLAY_CARDS_MUTATION = typed<{ playCards: boolean }, { cards: Pick<W
   mutation PlayCards($cards: [WhiteCardInput!]!) { playCards(cards: $cards) }
 `);
 export const UNDO_PLAY_MUTATION = typed<{ undoPlay: boolean }>(gql`mutation UndoPlay { undoPlay }`);
+export const REQUEST_NEW_HAND_MUTATION = typed<{ requestNewHand: boolean }>(gql`mutation RequestNewHand { requestNewHand }`);
 export const PICK_WINNER_MUTATION = typed<{ pickWinner: boolean }, { cardId: string }>(gql`
   mutation PickWinner($cardId: ID!) { pickWinner(cardId: $cardId) }
 `);

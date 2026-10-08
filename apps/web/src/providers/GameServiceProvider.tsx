@@ -9,7 +9,7 @@ import {
     GAME_SUBSCRIPTION, GIVEN_CARDS_SUBSCRIPTION, HOLD_GAME_SUBSCRIPTION, IMPORT_DECK_MUTATION, KICK_PLAYER_MUTATION,
     MY_HAND_QUERY, MY_HAND_SUBSCRIPTION, PICK_WINNER_MUTATION, PLAY_CARDS_MUTATION, PLAYER_JOINED_SUBSCRIPTION,
     PLAYER_LEFT_SUBSCRIPTION, REMOVE_DECK_MUTATION, RULES_SUBSCRIPTION, SHARE_ROUND_TO_DISCORD_MUTATION, SKIP_BLACK_CARD_MUTATION, START_GAME_MUTATION,
-    UNDO_PLAY_MUTATION, UPDATE_RULES_MUTATION, VOTE_TO_SKIP_MUTATION, WINNER_SELECTED_SUBSCRIPTION, toGame,
+    UNDO_PLAY_MUTATION, REQUEST_NEW_HAND_MUTATION, UPDATE_RULES_MUTATION, VOTE_TO_SKIP_MUTATION, WINNER_SELECTED_SUBSCRIPTION, toGame,
 } from "../graphql/operations";
 import type { GqlGame } from "../graphql/operations";
 import { getErrorMessage } from "../utils";
@@ -370,6 +370,7 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
         endGame,
         kickPlayer: (userId: string) => { mutate(KICK_PLAYER_MUTATION, { userId }); },
         undoPlay,
+        requestNewHand: () => { mutate(REQUEST_NEW_HAND_MUTATION); },
         pickWinner,
         playSelectedCard,
         playedCards,

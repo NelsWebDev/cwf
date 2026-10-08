@@ -66,6 +66,10 @@ const makePlayer = (id: string) => ({
   clearHand() {
     this.hand.clear();
   },
+  newHandsUsed: 0,
+  replaceHand(cards: WhiteCard[]) {
+    this.hand = new Map(cards.map((card) => [card.id, card]));
+  },
 });
 
 const makeBlackCards = (count: number) =>
@@ -474,5 +478,108 @@ describe("Game", () => {
     expect(game.currentRound).toBeUndefined();
     expect(winner.hand.size).toBe(0);
     expect(mocks.publish).toHaveBeenCalledWith("gameEnded", "winner");
+  });
+
+  describe("requestNewHand", () => {
+    const makeCard = (id: string, state = CardState.AVAILABLE): WhiteCard => ({
+      id,
+      deckIds: [],
+      text: id,
+      isCustom: false,
+      state,
+      createdAt: new Date(0),
+      updatedAt: new Date(0),
+    });
+
+    const setup = () => {
+      const game = new Game();
+      game.rules.newHandsPerGame = 2;
+      const player = makePlayer("player");
+      const oldCards = Array.from({ length: 10 }, (_, i) => makeCard(`old-${i}`, CardState.IN_USE));
+      oldCards.forEach((card) => player.hand.set(card.id, card));
+      mocks.gameUsers.set(player.id, player);
+      mocks.activeUsers.push(player);
+      game.started = true;
+      game._whiteCards = Array.from({ length: 40 }, (_, i) => makeCard(`new-${i}`));
+      game._currentRound = {
+        assertCanSitOut: vi.fn(),
+        sitOut: vi.fn(),
+      } as never;
+      return { game, player, oldCards };
+    };
+
+    it("replaces the whole hand and sits the player out", () => {
+      const { game, player, oldCards } = setup();
+
+      game.requestNewHand(player.id);
+
+      expect(player.hand.size).toBe(10);
+      expect([...player.hand.keys()].every((id) => id.startsWith("new-"))).toBe(true);
+      expect(oldCards.every((card) => card.state === CardState.PLAYED_PREVIOUSLY)).toBe(true);
+      expect(player.newHandsUsed).toBe(1);
+      expect(game._currentRound?.sitOut).toHaveBeenCalledWith(player.id);
+    });
+
+    it("allows only two new hands per game", () => {
+      const { game, player } = setup();
+
+      game.requestNewHand(player.id);
+      game.requestNewHand(player.id);
+      const hand = new Map(player.hand);
+
+      expect(() => game.requestNewHand(player.id)).toThrow("No new hands remaining");
+      expect(player.hand).toEqual(hand);
+      expect(player.newHandsUsed).toBe(2);
+    });
+
+    it("is disabled by default", () => {
+      const { game, player } = setup();
+      game.rules = { ...DEFAULT_RULES };
+
+      expect(DEFAULT_RULES.newHandsPerGame).toBe(0);
+      expect(() => game.requestNewHand(player.id)).toThrow("No new hands remaining");
+      expect(player.hand.size).toBe(10);
+    });
+
+    it("rejects requests when no game is running", () => {
+      const { game, player } = setup();
+      game.started = false;
+
+      expect(() => game.requestNewHand(player.id)).toThrow("Game has not started");
+    });
+
+    it("keeps the hand and the allowance when the round rejects the sit-out", () => {
+      const { game, player } = setup();
+      (game._currentRound!.assertCanSitOut as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        throw new Error("Card czar cannot sit out");
+      });
+
+      expect(() => game.requestNewHand(player.id)).toThrow("Card czar cannot sit out");
+      expect(player.hand.size).toBe(10);
+      expect(player.newHandsUsed).toBe(0);
+    });
+
+    it("does not deal cards to players who sat out when the next round starts", () => {
+      const { game, player } = setup();
+      const czar = makePlayer("czar");
+      const other = makePlayer("other");
+      [czar, other].forEach((p) => {
+        mocks.gameUsers.set(p.id, p);
+        mocks.activeUsers.push(p);
+      });
+      game._currentCzar = czar as never;
+      game._blackCards = [{ id: "b", pick: 1, state: CardState.AVAILABLE } as never];
+      game._currentRound = {
+        blackCard: { pick: 1 },
+        cardCzar: czar,
+        _sittingOut: new Set([player.id]),
+      } as never;
+      const before = player.hand.size;
+
+      game.nextRound();
+
+      expect(player.hand.size).toBe(before);
+      expect(other.hand.size).toBe(1);
+    });
   });
 });

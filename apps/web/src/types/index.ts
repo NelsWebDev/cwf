@@ -37,6 +37,7 @@ export type GameService = {
     endGame: () => void;
     kickPlayer: (userId: string) => void;
     undoPlay: () => void;
+    requestNewHand: () => void;
     pickWinner: (winngCardId: string) => void;
     setRules: (rules: Partial<Rules>) => void;
     setRule: <K extends keyof Rules>(key: K, value: Rules[K]) => void;

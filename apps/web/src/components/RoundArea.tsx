@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Button, Container, Grid,  Title, Stack, Box } from "@mantine/core";
-import { useAuth, useGame } from "../hooks";
+import { Button, Group, Text, Container, Grid,  Title, Stack, Box } from "@mantine/core";
+import { useAuth, useGame, useModal } from "../hooks";
 import SettingsPane from "./SettingsPane";
 import BlackCard from "./BlackCard";
 import { CardState, RoundStatus } from "../types";
@@ -23,7 +23,10 @@ const RoundArea = () => {
             <Grid.Col span={3}>
                 <Stack gap="md">
                     <BlackCard />
-                    <PlayCardButton />
+                    <Group gap="xs" wrap="nowrap" w="350px">
+                        <PlayCardButton />
+                        <NewHandButton />
+                    </Group>
                     <SelectWinnerButton />
                     <ShareToDiscordButton />
                 </Stack>
@@ -117,6 +120,8 @@ const ShareToDiscordButton = () => {
     const [loading, setLoading] = useState(false);
 
     if (currentRound?.status !== RoundStatus.SHOWING_WINNER) return null;
+    // Rounds won automatically (everyone else sat out) have no cards to share.
+    if (!Object.values(currentRound.plays).some((cards) => cards.length > 0)) return null;
 
     return (
         <Button
@@ -152,8 +157,8 @@ const PlayCardButton = () => {
     if(playedCards.length === currentRound.blackCard.pick) {
         return (
             <Button
-                size="md"
-                w="350px"
+                size="sm"
+            style={{ flex: 1 }}
                 onClick={undoPlay}
                 c="white"
             >
@@ -163,8 +168,8 @@ const PlayCardButton = () => {
     }
     return (
         <Button
-            size="md"
-            w="350px"
+            size="sm"
+            style={{ flex: 1 }}
             disabled={!selectedWhiteCard}
             onClick={playSelectedCard}
             c="white"
@@ -175,3 +180,47 @@ const PlayCardButton = () => {
 };
 
 export default RoundArea;
+
+const NewHandButton = () => {
+    const { isCardCzar, currentRound, players, requestNewHand } = useGame();
+    const { user } = useAuth();
+    const { showModal, closeModal } = useModal();
+
+    if (!user || isCardCzar || currentRound?.status !== RoundStatus.WAITING_FOR_PLAYERS) return null;
+    if (currentRound.sittingOut.includes(user.id)) {
+        return <Text ta="center" size="sm"
+            style={{ flex: 1 }}>You are sitting out this round</Text>;
+    }
+
+    const remaining = players.find((p) => p.id === user.id)?.newHandsRemaining ?? 0;
+    if (remaining <= 0) return null;
+    const hasPlayed = (currentRound.plays[user.id]?.length ?? 0) > 0;
+    const confirm = () => showModal({
+        title: "Get a new hand?",
+        element: (
+            <Stack>
+                <Text>
+                    You will sit out this round and lose all of your current cards in exchange
+                    for an entirely new hand. This cannot be undone. You have {remaining} new
+                    hand{remaining === 1 ? "" : "s"} left this game.
+                </Text>
+                <Button color="red" onClick={() => { closeModal(); requestNewHand(); }}>
+                    Sit out and get new hand
+                </Button>
+                <Button variant="default" onClick={closeModal}>Cancel</Button>
+            </Stack>
+        ),
+    });
+
+    return (
+        <Button
+            size="sm"
+            style={{ flex: 1 }}
+            c="white"
+            disabled={hasPlayed}
+            onClick={confirm}
+        >
+            New Hand ({remaining} left)
+        </Button>
+    );
+};

@@ -16,6 +16,7 @@ export class GameRound implements TGameGround {
   sharedToDiscord = false;
   _plays: Map<string, WhiteCard[]> = new Map();
   _votesToSkip: Map<string, boolean> = new Map();
+  _sittingOut: Set<string> = new Set();
   constructor(
     public readonly blackCard: BlackCard,
     public readonly cardCzar: GameUser,
@@ -24,6 +25,17 @@ export class GameRound implements TGameGround {
   }
   get plays() {
     return Object.fromEntries(this._plays.entries());
+  }
+
+  get sittingOut() {
+    return [...this._sittingOut];
+  }
+
+  /** Active, non-czar players who are expected to submit cards this round. */
+  get expectedPlayers() {
+    return socketManager.activeUsers.filter(
+      (u) => u.id !== this.cardCzar.id && !this._sittingOut.has(u.id),
+    );
   }
 
   get votesToSkip() {
@@ -40,6 +52,9 @@ export class GameRound implements TGameGround {
     }
     if (this.status !== RoundStatus.WAITING_FOR_PLAYERS) {
       throw new Error("Cannot play in this phase");
+    }
+    if (this._sittingOut.has(userId)) {
+      throw new Error("You are sitting out this round");
     }
 
     if (this._plays.has(userId)) {
@@ -59,17 +74,59 @@ export class GameRound implements TGameGround {
 
     this._plays.set(userId, cards || []);
     user.removeWhiteCardsFromHand(cards);
-    if (this._plays.size === socketManager.activeUsers.length - 1) {
-      // Give players time to undo, then randomize submissions before revealing them.
-      const UNDO_TIMEOUT = 5_000;
+    this.revealWhenAllPlayed();
+    game.emitJSON();
+  }
 
-      setTimeout(() => {
-        if (this._plays.size === socketManager.activeUsers.length - 1) {
-          this.shufflePlays();
-          this.status = RoundStatus.SELECTING_WINNER;
-          game.emitJSON();
-        }
-      }, UNDO_TIMEOUT);
+  private revealWhenAllPlayed() {
+    if (this._plays.size !== this.expectedPlayers.length) return;
+    // Give players time to undo, then randomize submissions before revealing them.
+    const UNDO_TIMEOUT = 5_000;
+
+    setTimeout(() => {
+      if (
+        this.status === RoundStatus.WAITING_FOR_PLAYERS &&
+        this._plays.size === this.expectedPlayers.length
+      ) {
+        this.shufflePlays();
+        this.status = RoundStatus.SELECTING_WINNER;
+        game.emitJSON();
+      }
+    }, UNDO_TIMEOUT);
+  }
+
+  assertCanSitOut(userId: string) {
+    if (!socketManager.gameUsers.has(userId)) {
+      throw new Error("User not found");
+    }
+    if (userId === this.cardCzar.id) {
+      throw new Error("Card czar cannot sit out");
+    }
+    if (this.status !== RoundStatus.WAITING_FOR_PLAYERS) {
+      throw new Error("Cannot sit out in this phase");
+    }
+    if (this._sittingOut.has(userId)) {
+      throw new Error("Already sitting out");
+    }
+    if (this._plays.has(userId)) {
+      throw new Error("Undo your play before sitting out");
+    }
+  }
+
+  /**
+   * Removes the player from this round. If only one player is left to play,
+   * they win the round automatically.
+   */
+  sitOut(userId: string) {
+    this.assertCanSitOut(userId);
+    this._sittingOut.add(userId);
+    this._votesToSkip.delete(userId);
+
+    const remaining = this.expectedPlayers;
+    if (remaining.length === 1) {
+      this.awardWin(remaining[0].id);
+    } else {
+      this.revealWhenAllPlayed();
     }
     game.emitJSON();
   }
@@ -124,6 +181,10 @@ export class GameRound implements TGameGround {
       throw new Error("User not found");
     }
 
+    this.awardWin(userId);
+  }
+
+  private awardWin(userId: string) {
     const winnerPoints = game.getPoints(userId) + 1;
 
     game._points.set(userId, winnerPoints);
@@ -158,7 +219,7 @@ export class GameRound implements TGameGround {
   }
 
   toJSON(): TGameGround {
-    const { id, blackCard, cardCzarId, status, winnerId, votesToSkip } = this;
+    const { id, blackCard, cardCzarId, status, winnerId, votesToSkip, sittingOut } = this;
     return {
       id,
       blackCard,
@@ -166,6 +227,7 @@ export class GameRound implements TGameGround {
       status,
       winnerId,
       votesToSkip,
+      sittingOut,
       plays: this.getJSONPlays(),
     };
   }
@@ -189,11 +251,14 @@ export class GameRound implements TGameGround {
     if (userId === this.cardCzar.id) {
       throw new Error("Card czar cannot vote to skip");
     }
+    if (this._sittingOut.has(userId)) {
+      throw new Error("You are sitting out this round");
+    }
     this._votesToSkip.set(userId, vote);
 
     const votes = [...this._votesToSkip.values()];
     const yesVotes = votes.filter((v) => v).length;
-    const percentYes = yesVotes / (socketManager.activeUsers.length - 1);
+    const percentYes = yesVotes / this.expectedPlayers.length;
 
     console.log("vote recorded", percentYes);
     game.emitJSON();

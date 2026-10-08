@@ -13,6 +13,8 @@ import {
   WhiteCard,
 } from "@repo/shared/types";
 
+const HAND_SIZE = 10;
+
 export class Game {
   started: boolean = false;
   rules: Rules = { ...DEFAULT_RULES };
@@ -349,7 +351,11 @@ export class Game {
     const currentRound = this._currentRound;
     const pick = currentRound.blackCard.pick;
     const cardsToAdd: [GameUser, WhiteCard[]][] = socketManager.activeUsers
-      .filter((u) => u.id !== currentRound.cardCzar.id)
+      .filter(
+        (u) =>
+          u.id !== currentRound.cardCzar.id &&
+          !currentRound._sittingOut.has(u.id),
+      )
       .map((user) => [user, this.drawWhiteCards(pick)]);
 
     cardsToAdd.forEach(([user, cards]) => {
@@ -360,6 +366,36 @@ export class Game {
     const blackCard = this.drawBlackCard();
     this._currentRound = new GameRound(blackCard, this.currentCardCzar);
     publish("game", this.toJSON());
+  }
+
+  /**
+   * Swaps a player's whole hand for new cards in exchange for sitting out the
+   * current round. Limited to `rules.newHandsPerGame` per player per game (0 disables it).
+   */
+  requestNewHand(userId: string) {
+    const round = this._currentRound;
+    if (!this.started || !round) {
+      throw new Error("Game has not started");
+    }
+    const user = socketManager.gameUsers.get(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    round.assertCanSitOut(userId);
+    if (this.rules.newHandsPerGame - user.newHandsUsed <= 0) {
+      throw new Error("No new hands remaining");
+    }
+
+    // Draw first so a failure leaves the player's hand untouched.
+    const newCards = this.drawWhiteCards(HAND_SIZE);
+    const oldCards = [...user.hand.values()];
+    oldCards.forEach((card) => {
+      if (card.isCustom) card.text = "";
+      card.state = CardState.PLAYED_PREVIOUSLY;
+    });
+    user.replaceHand(newCards);
+    user.newHandsUsed++;
+    round.sitOut(userId);
   }
 
   emitJSON() {
