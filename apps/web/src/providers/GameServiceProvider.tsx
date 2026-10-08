@@ -278,29 +278,35 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
         mutate(START_GAME_MUTATION, undefined, "Failed to start game");
     }
 
-    const importDeck = (deckId: string) => {
+    const importDeck = async (deckId: string): Promise<CardDeck | undefined> => {
         if (!deckId) {
             setAddDeckError("Please enter a deck ID");
-            return;
+            return undefined;
         }
         setAddedDeck(undefined);
         const formattedID = deckId.trim().replace("https://cast.clrtd.com/deck/", "").replace("https://cast.clrtd.com/account/edit/", "")
         if (!formattedID.match(/[A-Z0-9]{5}/)) {
             setAddDeckError("Invalid deck ID");
-            return;
+            return undefined;
         }
 
         setAddDeckError(undefined);
-        client.mutate({ mutation: IMPORT_DECK_MUTATION, variables: { deckId: formattedID } })
-            .then(({ data }) => {
-                const deck = data?.importDeck;
-                if (!deck) {
-                    return;
-                }
-                setAddedDeck(deck);
-                setAllDecks((prev) => prev.some((d) => d.id === deck.id) ? prev : [...prev, deck]);
-            })
-            .catch((error) => setAddDeckError(getErrorMessage(error)));
+        try {
+            const { data } = await client.mutate({
+                mutation: IMPORT_DECK_MUTATION,
+                variables: { deckId: formattedID },
+            });
+            const deck = data?.importDeck;
+            if (!deck) {
+                return undefined;
+            }
+            setAddedDeck(deck);
+            setAllDecks((prev) => prev.some((d) => d.id === deck.id) ? prev : [...prev, deck]);
+            return deck;
+        } catch (error) {
+            setAddDeckError(getErrorMessage(error));
+            return undefined;
+        }
     }
     const endGame = () => {
         mutate(END_GAME_MUTATION);

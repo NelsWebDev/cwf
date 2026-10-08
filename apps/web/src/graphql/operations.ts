@@ -53,6 +53,7 @@ const RULES_FIELDS = gql`
     numberOfCustomCards
     maxNumberOfPlayers
     allowMultipleAnswerBlackCards
+    announceToDiscord
   }
 `;
 const WHITE_CARD_FIELDS = gql`
@@ -114,6 +115,9 @@ const GAME_FIELDS = gql`
 export const GAME_QUERY = typed<{ game: GqlGame }>(gql`
   ${GAME_FIELDS}
   query Game { game { ...GameFields } }
+`);
+export const GAME_PASSWORD_QUERY = typed<{ gamePassword: string }>(gql`
+  query GamePassword { gamePassword }
 `);
 export const MY_HAND_QUERY = typed<{ myHand: WhiteCard[] }>(gql`
   ${WHITE_CARD_FIELDS}

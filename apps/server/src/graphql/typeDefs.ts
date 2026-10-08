@@ -40,6 +40,7 @@ export const typeDefs = /* GraphQL */ `
     numberOfCustomCards: Int!
     maxNumberOfPlayers: Int!
     allowMultipleAnswerBlackCards: Boolean!
+    announceToDiscord: Boolean!
   }
 
   input RulesInput {
@@ -49,6 +50,7 @@ export const typeDefs = /* GraphQL */ `
     numberOfCustomCards: Int
     maxNumberOfPlayers: Int
     allowMultipleAnswerBlackCards: Boolean
+    announceToDiscord: Boolean
   }
 
   type BlackCard {
@@ -108,6 +110,7 @@ export const typeDefs = /* GraphQL */ `
     me: User!
     players: [User!]!
     game: Game!
+    gamePassword: String!
     myHand: [WhiteCard!]!
     decks: [CardDeck!]!
   }

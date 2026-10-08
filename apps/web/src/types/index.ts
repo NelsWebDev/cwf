@@ -27,7 +27,7 @@ export type GameService = {
     addDeckError?: string|undefined;
     isCardCzar: boolean;
     playedCards: WhiteCard[];
-    importDeck: (deckId: string) => void;
+    importDeck: (deckId: string) => Promise<CardDeck | undefined>;
     setSelectedWhiteCard: (card: WhiteCard|undefined) => void;
     addDeck: (deckId: string) => void;
     removeDeck: (deckId: string) => void;

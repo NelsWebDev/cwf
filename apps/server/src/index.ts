@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 import { express, httpServer, prismaClient } from "./singletons";
 import { startGraphQL } from "./graphql";
 import { resolve } from "node:path";
-
 loadEnv({
   path: "../../.env",
 });

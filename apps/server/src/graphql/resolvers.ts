@@ -3,6 +3,7 @@ import { CardManager } from "../CardManager";
 import { game, socketManager } from "../singletons";
 import { subscribe, subscribeToUser } from "../pubsub";
 import { importDeck } from "../utils/cardImporter";
+import { announceGameStart } from "../utils/discordWebhook";
 import { requireAccess, requireUser, type GraphQLContext } from "./context";
 import type { GameRound, Rules, WhiteCard } from "@repo/shared/types";
 
@@ -51,6 +52,10 @@ export const resolvers = {
     game: (_: unknown, __: unknown, ctx: GraphQLContext) => {
       requireAccess(ctx);
       return game.toJSON();
+    },
+    gamePassword: (_: unknown, __: unknown, ctx: GraphQLContext) => {
+      requireAccess(ctx);
+      return process.env.GAME_PASSWORD ?? "";
     },
     myHand: (_: unknown, __: unknown, ctx: GraphQLContext) =>
       Array.from(requireUser(ctx).hand.values()),
@@ -114,6 +119,13 @@ export const resolvers = {
     startGame: async (_: unknown, __: unknown, ctx: GraphQLContext) => {
       requireAccess(ctx);
       await game.start();
+      if (game.rules.announceToDiscord) {
+        try {
+          await announceGameStart(ctx.user?.username ?? "Someone");
+        } catch (error) {
+          console.error("Failed to announce game start to Discord", error);
+        }
+      }
       return true;
     },
     endGame: (_: unknown, __: unknown, ctx: GraphQLContext) => {
