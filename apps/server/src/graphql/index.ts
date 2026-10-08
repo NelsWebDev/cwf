@@ -19,7 +19,15 @@ type ConnectionExtra = { user?: GameUser; admin?: boolean };
 export async function startGraphQL() {
   const schema = makeExecutableSchema({ typeDefs, resolvers });
 
-  const wsServer = new WebSocketServer({ server: httpServer, path: GRAPHQL_PATH });
+  // noServer so upgrade requests for other paths (e.g. Vite's HMR socket in development) are left alone
+  // instead of being rejected by this server.
+  const wsServer = new WebSocketServer({ noServer: true });
+  httpServer.on("upgrade", (request, socket, head) => {
+    const { pathname } = new URL(request.url ?? "/", "http://localhost");
+    if (pathname === GRAPHQL_PATH) {
+      wsServer.handleUpgrade(request, socket, head, (ws) => wsServer.emit("connection", ws, request));
+    }
+  });
   const wsCleanup = useServer<Record<string, unknown>, ConnectionExtra>(
     {
       schema,
