@@ -10,11 +10,11 @@ vi.mock("../CardManager", () => ({
   },
 }));
 
-import { parseDeckToPrismaCreate } from "./cardImporter";
+import { parseDeck } from "./cardImporter";
 
-describe("parseDeckToPrismaCreate", () => {
+describe("parseDeck", () => {
   it("converts calls, response cards, and deck metadata to Prisma create input", () => {
-    const result = parseDeckToPrismaCreate({
+    const result = parseDeck({
       error: 0,
       name: "Example deck",
       description: "A description",
@@ -24,24 +24,22 @@ describe("parseDeckToPrismaCreate", () => {
     });
 
     expect(result).toEqual({
-      name: "Example deck",
-      description: "A description",
-      importedDeckId: "ABCDE",
-      cahOfficial: false,
-      blackCards: {
-        create: [
-          { blackCard: { create: { text: "I love _________ cats", pick: 1 } } },
-          { blackCard: { create: { text: "Wait _________!", pick: 1 } } },
-        ],
+      deck: {
+        name: "Example deck",
+        description: "A description",
+        importedDeckId: "ABCDE",
+        cahOfficial: false,
       },
-      whiteCards: {
-        create: [{ whiteCard: { create: { text: "a response" } } }],
-      },
+      blackCards: [
+        { text: "I love _________ cats", pick: 1 },
+        { text: "Wait _________!", pick: 1 },
+      ],
+      whiteCards: [{ text: "a response" }],
     });
   });
 
   it("preserves the pick count for multi-blank calls", () => {
-    const result = parseDeckToPrismaCreate({
+    const result = parseDeck({
       error: 0,
       name: "Multi-blank deck",
       description: "",
@@ -50,12 +48,6 @@ describe("parseDeckToPrismaCreate", () => {
       responses: [],
     });
 
-    expect(result.blackCards.create).toEqual([
-      {
-        blackCard: {
-          create: { text: "_________ and _________?", pick: 2 },
-        },
-      },
-    ]);
+    expect(result.blackCards).toEqual([{ text: "_________ and _________?", pick: 2 }]);
   });
 });

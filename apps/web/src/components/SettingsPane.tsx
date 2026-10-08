@@ -1,10 +1,22 @@
-import { Button, Checkbox, Input, NativeSelect, ScrollArea, SimpleGrid, Table, Tabs, Text, Title } from "@mantine/core";
-import { IconPlus, IconSearch, IconX } from "@tabler/icons-react";
-import { useMemo, useState } from "react";
+import { Button, Checkbox, Group, Input, NativeSelect, ScrollArea, SimpleGrid, Table, Tabs, Text, Title } from "@mantine/core";
+import { IconChevronDown, IconChevronRight, IconPlus, IconSearch, IconX } from "@tabler/icons-react";
+import { Fragment, useMemo, useState } from "react";
 import { useAuth, useGame } from "../hooks";
 import PreferencesModal from "./PreferencesModal";
 
 
+
+const MAIN_DECK_PREFIXES = ["CAH Main Deck:", "Cards Against Humanity: Main Deck"];
+const CAH_PREFIX = "Cards Against Humanity:";
+const CAH_MAIN_PREFIX = "CAH Main Deck:";
+
+const isMainDeck = (name: string) => MAIN_DECK_PREFIXES.some((prefix) => name.startsWith(prefix));
+
+const displayDeckName = (name: string) => {
+    if (name.startsWith(CAH_MAIN_PREFIX)) return name.slice(CAH_MAIN_PREFIX.length).trim();
+    if (name.startsWith(CAH_PREFIX)) return name.slice(CAH_PREFIX.length).trim();
+    return name;
+};
 
 const SettingsPane = ({ showMySettings = false }: { showMySettings?: boolean }) => {
 
@@ -130,13 +142,18 @@ const DeckSettings = () => {
         ).sort((a, b) => a.name.localeCompare(b.name));
     }
         , [allDecks, cardDecks, deckInput]);
-    const availableCustomDecks = useMemo(() => {
-        return allAvailablelDecks.filter((deck) => !deck.cahOfficial);
-    }, [allAvailablelDecks]);
-    const availableStandardDecks = useMemo(() => {
-        return allAvailablelDecks.filter((deck) => deck.cahOfficial);
-    }, [allAvailablelDecks]);
-
+    const availableCustomDecks = useMemo(
+        () => allAvailablelDecks.filter((deck) => !deck.cahOfficial), [allAvailablelDecks]);
+    const availableMainDecks = useMemo(
+        () => allAvailablelDecks.filter((deck) => deck.cahOfficial && isMainDeck(deck.name)), [allAvailablelDecks]);
+    const availableExpansionDecks = useMemo(
+        () => allAvailablelDecks.filter((deck) => deck.cahOfficial && !isMainDeck(deck.name)), [allAvailablelDecks]);
+    const [openSections, setOpenSections] = useState<Record<string, boolean>>({ Custom: true });
+    const availableSections = [
+        { title: "Custom", decks: availableCustomDecks },
+        { title: "Official - Main", decks: availableMainDecks },
+        { title: "Official - Expansion", decks: availableExpansionDecks },
+    ];
 
     return (
         <Table highlightOnHover styles={{
@@ -188,7 +205,7 @@ const DeckSettings = () => {
                                 <Text style={{ fontSize: "1.2rem" }} fw="bold">Available Decks</Text>
                             </Table.Th>
                         </Table.Tr>
-                        {((availableStandardDecks.length + availableCustomDecks.length) > 6 || deckInput) && (<Table.Tr>
+                        {(allAvailablelDecks.length > 6 || deckInput) && (<Table.Tr>
                             <Table.Td colSpan={2}>
                                 <Input placeholder="Search Decks"
                                     leftSection={<IconSearch />}
@@ -196,46 +213,41 @@ const DeckSettings = () => {
                             </Table.Td>
                         </Table.Tr>)}
                         <ScrollArea h={250}>
-                            <Table.Tr>
-                                <Table.Th colSpan={2}>
-                                    <Title order={4}>Custom Decks</Title>
-                                </Table.Th>
-                            </Table.Tr>
-                            {availableCustomDecks.map((deck) => (
-                                <Table.Tr key={deck.id}>
-                                    <Table.Td pl="sm">
-                                        <Text>{deck.name}</Text>
-                                    </Table.Td>
-                                    <Table.Td align="right" pr="xl">
-                                        <Button
-                                            p='sm'
-                                            color="light-dark(var(--mantine-color-blue-6), var(--mantine-color-dark-4))"
-                                            onClick={() => addDeck(deck.id)}>
-                                            <IconPlus />
-                                        </Button>
-                                    </Table.Td>
-                                </Table.Tr>
-                            ))}
-                            <Table.Tr>
-                                <Table.Th colSpan={2}>
-                                    <Title order={4}>Standard Decks</Title>
-                                </Table.Th>
-                            </Table.Tr>
-                            {availableStandardDecks.map((deck) => (
-                                <Table.Tr key={deck.id}>
-                                    <Table.Td pl="sm">
-                                        <Text>{deck.name}</Text>
-                                    </Table.Td>
-                                    <Table.Td align="right" pr="xl">
-                                        <Button
-                                            p='sm'
-                                            color="light-dark(var(--mantine-color-blue-6), var(--mantine-color-dark-4))"
-                                            onClick={() => addDeck(deck.id)}>
-                                            <IconPlus />
-                                        </Button>
-                                    </Table.Td>
-                                </Table.Tr>
-                            ))}
+                            {availableSections.map(({ title, decks }) => {
+                                if (decks.length === 0) return null;
+                                // Searching expands every section so matches are visible
+                                const isSearching = Boolean(deckInput);
+                                const isOpen = isSearching || Boolean(openSections[title]);
+                                return (
+                                    <Fragment key={title}>
+                                        <Table.Tr
+                                            style={{ cursor: isSearching ? "default" : "pointer" }}
+                                            onClick={isSearching ? undefined : () => setOpenSections((prev) => ({ ...prev, [title]: !prev[title] }))}>
+                                            <Table.Th colSpan={2}>
+                                                <Group gap="xs">
+                                                    {!isSearching && (isOpen ? <IconChevronDown size={18} /> : <IconChevronRight size={18} />)}
+                                                    <Title order={4}>{title} ({decks.length})</Title>
+                                                </Group>
+                                            </Table.Th>
+                                        </Table.Tr>
+                                        {isOpen && decks.map((deck) => (
+                                            <Table.Tr key={deck.id}>
+                                                <Table.Td pl="sm">
+                                                    <Text>{displayDeckName(deck.name)}</Text>
+                                                </Table.Td>
+                                                <Table.Td align="right" pr="xl">
+                                                    <Button
+                                                        p='sm'
+                                                        color="light-dark(var(--mantine-color-blue-6), var(--mantine-color-dark-4))"
+                                                        onClick={() => addDeck(deck.id)}>
+                                                        <IconPlus />
+                                                    </Button>
+                                                </Table.Td>
+                                            </Table.Tr>
+                                        ))}
+                                    </Fragment>
+                                );
+                            })}
                         </ScrollArea>
                     </>)}
             </Table.Tbody>

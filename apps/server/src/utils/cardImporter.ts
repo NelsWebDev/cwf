@@ -12,7 +12,7 @@ type OriginalDeckFormat = {
   responses: { text: string[] }[];
 }
 
-export const parseDeckToPrismaCreate = (deck: OriginalDeckFormat) : Prisma.DeckCreateInput => {
+export const parseDeck = (deck: OriginalDeckFormat) => {
   const blackCards = deck.calls.map((call) => {
     const numberOfBlanks = call.text.length - 1;
     const text = call.text
@@ -24,15 +24,15 @@ export const parseDeckToPrismaCreate = (deck: OriginalDeckFormat) : Prisma.DeckC
     return { text, pick: numberOfBlanks };
   });
   return {
-    name: deck.name,
-    description: deck.description,
-    importedDeckId: deck.watermark,
-    cahOfficial: false,
-    blackCards: {create: blackCards.map((blackCard) => ({ blackCard: { create: blackCard } }))},
-    whiteCards: {create: deck.responses.map((response) => ({
-      whiteCard: { create: { text: response.text[0] } },
-    }))},
-  }
+    deck: {
+      name: deck.name,
+      description: deck.description,
+      importedDeckId: deck.watermark,
+      cahOfficial: false,
+    } satisfies Prisma.DeckCreateInput,
+    blackCards,
+    whiteCards: deck.responses.map((response) => ({ text: response.text[0] })),
+  };
 }
 
 export const importDeck = async (deckCode: string) => {
@@ -65,11 +65,11 @@ export const importDeck = async (deckCode: string) => {
   if (! (json.name && "description" in json && Array.isArray(json.calls) && Array.isArray(json.responses))) {
     throw new Error("Invalid deck format from URL");
   }
-  const deck = parseDeckToPrismaCreate(json);
+  const parsed = parseDeck(json);
 
   const existingDeck = await prismaClient.deck.findFirst({
     where: {
-      importedDeckId: deck.importedDeckId,
+      importedDeckId: parsed.deck.importedDeckId,
       cahOfficial: false,
     },
   });
@@ -81,13 +81,33 @@ export const importDeck = async (deckCode: string) => {
       });
     }
 
-    const newDeck  = await tx.deck.create({
-      data: deck,
-      include: {_count: {select: {blackCards: true, whiteCards: true}}},
+    const created = await tx.deck.create({ data: parsed.deck });
+
+    // Cards are created explicitly (rather than via nested creates) so the
+    // join rows are always inserted after the deck and cards exist.
+    const whiteCards = await tx.whiteCard.createManyAndReturn({
+      data: parsed.whiteCards,
+      select: { id: true },
+    });
+    await tx.deckWhiteCard.createMany({
+      data: whiteCards.map(({ id }) => ({ deckId: created.id, whiteCardId: id })),
+    });
+
+    const blackCards = await tx.blackCard.createManyAndReturn({
+      data: parsed.blackCards,
+      select: { id: true },
+    });
+    await tx.deckBlackCard.createMany({
+      data: blackCards.map(({ id }) => ({ deckId: created.id, blackCardId: id })),
+    });
+
+    const newDeck = await tx.deck.findUniqueOrThrow({
+      where: { id: created.id },
+      include: { _count: { select: { blackCards: true, whiteCards: true } } },
     });
 
     return CardManager.deckFromPrismaQuery(newDeck);
-  });
+  }, { timeout: 60_000 });
 
   return newDeck;
 
