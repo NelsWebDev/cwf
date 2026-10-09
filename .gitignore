@@ -30,3 +30,4 @@ dist-ssr
 **/.DS_Store
 .turbo
 apps/server/public
+apps/server/src/prisma/generated

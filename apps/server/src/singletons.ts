@@ -1,6 +1,6 @@
 import {config as loadEnv} from "dotenv";
 import { createServer as createHttpServer } from "http";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "./prisma/generated/client";
 import Express from "express";
 import { SocketManager } from "./session/SocketManager";
 import { Game } from "./Game";

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "../prisma/generated/client";
 import { chunkArray, importCahCompact, type CAHCompact } from "./cahCompactImporter";
 
 const makePrisma = (existingImportedIds: string[] = []) => {

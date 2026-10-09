@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma } from "./prisma/generated/client";
 import { prismaClient } from "./singletons";
 import { CardDeck, CardState, WhiteCard } from "@repo/shared/types";
 

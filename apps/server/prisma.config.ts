@@ -5,7 +5,7 @@ loadEnv({
   path: path.resolve(__dirname, "../../.env")
 });
 export default defineConfig({
-  schema: "prisma/schema.prisma",
+  schema: "src/prisma/schema.prisma",
   datasource: {
     url: env("DATABASE_URL")
   },

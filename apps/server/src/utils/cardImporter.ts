@@ -1,6 +1,6 @@
 import { prismaClient } from "../singletons";
 import { CardManager } from "../CardManager";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../prisma/generated/client";
 
 
 type OriginalDeckFormat = {
