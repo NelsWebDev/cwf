@@ -26,8 +26,8 @@ ViteExpress.config({
 const HTTP_PORT = Number(process.env.HTTP_PORT ?? 3000);
 
 express.get("/api", (_, res) => {
-  const {FRONTEND_URL} = process.env;
-  FRONTEND_URL ? res.redirect(FRONTEND_URL) : res.sendStatus(400)
+  const appUrl = process.env.APP_URL || process.env.FRONTEND_URL;
+  appUrl ? res.redirect(appUrl) : res.sendStatus(400)
 });
 
 // Lets browsers load custom card images through the server, for URLs only the server can reach.

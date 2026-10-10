@@ -31,15 +31,17 @@ class HttpError extends Error {
 type AuthedRequest = Request & { accountId: string; token: string };
 
 const GOOGLE_STATE_COOKIE = "deck_google_oauth_state";
+const publicAppUrl = () => (process.env.APP_URL || process.env.FRONTEND_URL)?.replace(/\/+$/, "");
+
 const googleClient = () => {
-  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } = process.env;
-  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
+  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } = process.env;
+  const redirectUri =
+    process.env.GOOGLE_REDIRECT_URI || (publicAppUrl() ? `${publicAppUrl()}/api/manage/auth/google/callback` : undefined);
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !redirectUri) {
     throw new HttpError(503, "Google login is not configured");
   }
-  return new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI);
+  return new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, redirectUri);
 };
-
-const frontendUrl = () => process.env.FRONTEND_URL?.replace(/\/+$/, "");
 
 const cookieValue = (req: Request, name: string) =>
   req.header("cookie")?.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${name}=`))?.slice(name.length + 1);
@@ -163,7 +165,7 @@ export const createDeckRouter = () => {
   router.get(
     "/auth/google/callback",
     wrap(async (req, res) => {
-      const destination = frontendUrl();
+      const destination = publicAppUrl();
       if (!destination) throw new HttpError(503, "Frontend URL is not configured");
       const state = typeof req.query.state === "string" ? req.query.state : undefined;
       if (!state || state !== cookieValue(req, GOOGLE_STATE_COOKIE)) throw new HttpError(400, "Invalid Google login state");
