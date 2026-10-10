@@ -16,6 +16,9 @@ export const normalizeEmail = (email: unknown): string | undefined => {
   return value.length <= 254 && EMAIL_REGEX.test(value) ? value : undefined;
 };
 
+export const googleEmailFromPayload = (payload: { email?: unknown; email_verified?: unknown } | undefined) =>
+  payload?.email_verified === true ? normalizeEmail(payload.email) : undefined;
+
 export const hashPassword = async (password: string): Promise<string> => {
   const salt = randomBytes(16);
   const key = await scrypt(password, salt, 64);
@@ -29,6 +32,9 @@ export const verifyPassword = async (password: string, stored: string): Promise<
   const actual = await scrypt(password, Buffer.from(saltHex, "hex"), expected.length);
   return timingSafeEqual(actual, expected);
 };
+
+export const verifyAccountPassword = async (password: string, passwordHash: string | null): Promise<boolean> =>
+  passwordHash ? verifyPassword(password, passwordHash) : (await hashPassword(password), false);
 
 const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
 

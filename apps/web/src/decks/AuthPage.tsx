@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from "react";
-import { Alert, Anchor, Button, Card, Center, PasswordInput, Stack, Text, TextInput, Title } from "@mantine/core";
+import { Alert, Anchor, Button, Card, Center, Divider, PasswordInput, Stack, Text, TextInput, Title } from "@mantine/core";
 import { Link } from "react-router";
 import { useDeckAuth } from "./deckAuthContext";
+import { deckApi } from "./api";
 import { getErrorMessage } from "../utils";
 
 type Mode = "login" | "register";
@@ -80,6 +81,10 @@ const AuthPage = () => {
             )}
             <Button type="submit" loading={submitting}>
               {registering ? "Register" : "Log in"}
+            </Button>
+            <Divider label="or" />
+            <Button component="a" href={deckApi.googleLoginUrl} variant="default">
+              Continue with Google
             </Button>
             <Anchor
               component="button"

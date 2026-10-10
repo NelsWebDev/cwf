@@ -56,6 +56,7 @@ type AuthResult = { token: string; account: Account };
 export const deckApi = {
   register: (email: string, password: string) => request<AuthResult>("POST", "/auth/register", { email, password }),
   login: (email: string, password: string) => request<AuthResult>("POST", "/auth/login", { email, password }),
+  googleLoginUrl: `${BASE_URL}/auth/google`,
   logout: () => request<void>("POST", "/auth/logout"),
   me: () => request<{ account: Account }>("GET", "/auth/me"),
   listDecks: () => request<{ decks: DeckSummary[] }>("GET", "/decks"),

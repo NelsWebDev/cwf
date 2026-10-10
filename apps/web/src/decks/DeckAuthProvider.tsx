@@ -4,7 +4,17 @@ import { DeckAuthContext, type DeckAuth } from "./deckAuthContext";
 
 export const DeckAuthProvider = ({ children }: { children: ReactNode }) => {
   const [account, setAccount] = useState<Account>();
-  const [loading, setLoading] = useState(() => !!localStorage.getItem(DECK_TOKEN_KEY));
+  const [loading, setLoading] = useState(
+    () => !!localStorage.getItem(DECK_TOKEN_KEY) || !!new URLSearchParams(window.location.hash.slice(1)).get("googleToken"),
+  );
+
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.hash.slice(1)).get("googleToken");
+    if (!token) return;
+    localStorage.setItem(DECK_TOKEN_KEY, token);
+    window.history.replaceState({}, document.title, window.location.pathname);
+    deckApi.me().then(({ account }) => setAccount(account)).catch(() => localStorage.removeItem(DECK_TOKEN_KEY)).finally(() => setLoading(false));
+  }, []);
 
   const clear = useCallback(() => {
     localStorage.removeItem(DECK_TOKEN_KEY);
@@ -33,6 +43,11 @@ export const DeckAuthProvider = ({ children }: { children: ReactNode }) => {
       loading,
       login: async (email, password) => start(await deckApi.login(email, password)),
       register: async (email, password) => start(await deckApi.register(email, password)),
+      googleLogin: (token) => {
+        localStorage.setItem(DECK_TOKEN_KEY, token);
+        setLoading(true);
+        void deckApi.me().then(({ account }) => setAccount(account)).catch(clear).finally(() => setLoading(false));
+      },
       logout: async () => {
         await deckApi.logout().catch(() => undefined);
         clear();

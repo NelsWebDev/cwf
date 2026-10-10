@@ -1,4 +1,6 @@
 import { Router, json, type NextFunction, type Request, type Response } from "express";
+import { randomBytes } from "node:crypto";
+import { OAuth2Client } from "google-auth-library";
 import { DECK_LIMITS, calculatePick } from "@repo/shared/deckRules";
 import { Prisma } from "../prisma/generated/client";
 import { prismaClient } from "../singletons";
@@ -11,7 +13,8 @@ import {
   findAccountByToken,
   hashPassword,
   normalizeEmail,
-  verifyPassword,
+  googleEmailFromPayload,
+  verifyAccountPassword,
 } from "./accounts";
 
 export const DECK_API_PATH = "/api/manage";
@@ -26,6 +29,20 @@ class HttpError extends Error {
 }
 
 type AuthedRequest = Request & { accountId: string; token: string };
+
+const GOOGLE_STATE_COOKIE = "deck_google_oauth_state";
+const googleClient = () => {
+  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } = process.env;
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
+    throw new HttpError(503, "Google login is not configured");
+  }
+  return new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI);
+};
+
+const frontendUrl = () => process.env.FRONTEND_URL?.replace(/\/+$/, "");
+
+const cookieValue = (req: Request, name: string) =>
+  req.header("cookie")?.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${name}=`))?.slice(name.length + 1);
 
 const bearerToken = (req: Request) => {
   const header = req.header("authorization");
@@ -122,6 +139,56 @@ export const createDeckRouter = () => {
     return { email, password };
   };
 
+  router.get(
+    "/auth/google",
+    limitAuth,
+    wrap(async (req, res) => {
+      const client = googleClient();
+      const state = randomBytes(32).toString("base64url");
+      res.setHeader(
+        "Set-Cookie",
+        `${GOOGLE_STATE_COOKIE}=${state}; HttpOnly; SameSite=Lax; Path=${DECK_API_PATH}/auth/google; Max-Age=600`,
+      );
+      res.redirect(
+        client.generateAuthUrl({
+          access_type: "online",
+          scope: ["openid", "email", "profile"],
+          state,
+          prompt: "select_account",
+        }),
+      );
+    }),
+  );
+
+  router.get(
+    "/auth/google/callback",
+    wrap(async (req, res) => {
+      const destination = frontendUrl();
+      if (!destination) throw new HttpError(503, "Frontend URL is not configured");
+      const state = typeof req.query.state === "string" ? req.query.state : undefined;
+      if (!state || state !== cookieValue(req, GOOGLE_STATE_COOKIE)) throw new HttpError(400, "Invalid Google login state");
+      const client = googleClient();
+      const code = typeof req.query.code === "string" ? req.query.code : undefined;
+      if (!code) throw new HttpError(400, "Google login was cancelled");
+      const { tokens } = await client.getToken(code);
+      if (!tokens.id_token) throw new HttpError(400, "Google did not return an identity token");
+      const ticket = await client.verifyIdToken({ idToken: tokens.id_token, audience: process.env.GOOGLE_CLIENT_ID });
+      const payload = ticket.getPayload();
+      const email = googleEmailFromPayload(payload);
+      if (!email) throw new HttpError(400, "Google account email is not verified");
+
+      const account = await prismaClient.account.upsert({
+        where: { email },
+        update: {},
+        create: { email, passwordHash: null },
+      });
+      const token = await createSession(account.id);
+      res
+        .setHeader("Set-Cookie", `${GOOGLE_STATE_COOKIE}=; HttpOnly; SameSite=Lax; Path=${DECK_API_PATH}/auth/google; Max-Age=0`)
+        .redirect(`${destination}/decks#googleToken=${encodeURIComponent(token)}`);
+    }),
+  );
+
   router.post(
     "/auth/register",
     limitAuth,
@@ -149,9 +216,7 @@ export const createDeckRouter = () => {
     wrap(async (req, res) => {
       const { email, password } = credentials(req);
       const account = await prismaClient.account.findUnique({ where: { email } });
-      const valid = account
-        ? await verifyPassword(password, account.passwordHash)
-        : (await hashPassword(password), false);
+      const valid = await verifyAccountPassword(password, account?.passwordHash ?? null);
       if (!account || !valid) throw new HttpError(401, "Incorrect email or password");
       res.json({ token: await createSession(account.id), account: { id: account.id, email } });
     }),

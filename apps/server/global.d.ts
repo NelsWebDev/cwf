@@ -17,6 +17,9 @@ declare namespace NodeJS {
      * @prop The URL for the frontend of the application
      */
     FRONTEND_URL?: string;
+    GOOGLE_CLIENT_ID?: string;
+    GOOGLE_CLIENT_SECRET?: string;
+    GOOGLE_REDIRECT_URI?: string;
 
     /**
      * @prop The URL for the backend of the application
