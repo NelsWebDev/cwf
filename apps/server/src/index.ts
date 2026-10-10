@@ -5,6 +5,7 @@ import { express, httpServer, prismaClient } from "./singletons";
 import { startGraphQL } from "./graphql";
 import { resolve } from "node:path";
 import { getCachedCardImage } from "./utils/cardImages";
+import { DECK_API_PATH, createDeckRouter } from "./decks/router";
 loadEnv({
   path: "../../.env",
 });
@@ -51,6 +52,8 @@ express.get("/api/card-image", async (req, res) => {
     res.sendStatus(502);
   }
 });
+
+express.use(DECK_API_PATH, createDeckRouter());
 
 async function startServer() {
   await startGraphQL();

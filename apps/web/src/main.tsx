@@ -8,6 +8,8 @@ import GameServiceProvider from './providers/GameServiceProvider.tsx'
 import ModalServiceProvider from './providers/ModalServiceProvider.tsx'
 import { ApolloProvider } from '@apollo/client/react'
 import { apolloClient } from './graphql/client.ts'
+import { BrowserRouter, Route, Routes } from 'react-router'
+import DecksApp from './decks/DecksApp.tsx'
 import { ThemeOption, ThemeOptionContext } from './providers/Contexts.tsx'
 
 const themeOptionStorageKey = 'cwf-color-theme';
@@ -123,15 +125,25 @@ export function Root() {
           defaultColorScheme='auto'
           forceColorScheme={isPurpleTheme ? 'dark' : undefined}
         >
-          <ApolloProvider client={apolloClient}>
-            <AuthServiceProvider>
-              <ModalServiceProvider>
-                <GameServiceProvider>
-                  <App />
-                </GameServiceProvider>
-              </ModalServiceProvider>
-            </AuthServiceProvider>
-          </ApolloProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/decks/*" element={<DecksApp />} />
+              <Route
+                path="*"
+                element={
+                  <ApolloProvider client={apolloClient}>
+                    <AuthServiceProvider>
+                      <ModalServiceProvider>
+                        <GameServiceProvider>
+                          <App />
+                        </GameServiceProvider>
+                      </ModalServiceProvider>
+                    </AuthServiceProvider>
+                  </ApolloProvider>
+                }
+              />
+            </Routes>
+          </BrowserRouter>
         </MantineProvider>
       </ThemeOptionContext.Provider>
     </>

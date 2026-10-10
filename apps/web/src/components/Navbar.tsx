@@ -1,8 +1,9 @@
-import { IconCardsFilled, IconLogout, IconSettingsFilled, IconStar } from '@tabler/icons-react';
+import { IconCardsFilled, IconStack2, IconLogout, IconSettingsFilled, IconStar } from '@tabler/icons-react';
 import { Button, Container, CSSProperties, Group, Modal } from '@mantine/core';
 import { useAuth, useGame } from '../hooks';
 import SettingsPane from './SettingsPane';
 import { useState } from 'react';
+import { Link } from 'react-router';
 
 const navButtonStyle: CSSProperties = {
   color: 'var(--mantine-color-white)',
@@ -52,6 +53,13 @@ export function HeaderMenu() {
                 End Game
               </Button>)}
               <Button
+                component={Link}
+                to="/decks"
+                style={navButtonStyle}
+                size="md" leftSection={<IconStack2 size={16} />}>
+                Decks
+              </Button>
+              <Button
                 style={navButtonStyle}
                 size="md" leftSection={<IconSettingsFilled size={16} />} onClick={show}>
                 Settings
@@ -65,4 +73,4 @@ export function HeaderMenu() {
       </header>
     </>
   );
-}
+}
