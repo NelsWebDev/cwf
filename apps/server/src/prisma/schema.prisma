@@ -10,14 +10,6 @@ datasource db {
   provider = "postgres"
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  username  String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 // Deck manager accounts. Separate from game players (User / GameUser).
 model Account {
   id           String           @id @default(cuid())
@@ -27,6 +19,8 @@ model Account {
   updatedAt    DateTime         @updatedAt
   decks        Deck[]
   sessions     AccountSession[]
+
+  @@map("users")
 }
 
 model AccountSession {
@@ -37,6 +31,8 @@ model AccountSession {
   account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   @@index([accountId])
+
+  @@map("users_sessions")
 }
 
 model BlackCard {
@@ -46,6 +42,7 @@ model BlackCard {
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
   decksCards DeckBlackCard[]
+  @@map("black_cards")
 }
 
 model WhiteCard {
@@ -54,6 +51,7 @@ model WhiteCard {
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
   decksCards DeckWhiteCard[]
+  @@map("white_cards")
 }
 
 model Deck {
@@ -69,6 +67,7 @@ model Deck {
   updatedAt  DateTime        @updatedAt
   blackCards DeckBlackCard[]
   whiteCards DeckWhiteCard[]
+  @@map("decks")
 }
 
 model DeckBlackCard {
@@ -78,6 +77,7 @@ model DeckBlackCard {
   blackCard   BlackCard @relation(fields: [blackCardId], references: [id], onDelete: Cascade)
 
   @@id([deckId, blackCardId])
+  @@map("decks_black_cards")
 }
 
 model DeckWhiteCard {
@@ -87,4 +87,5 @@ model DeckWhiteCard {
   whiteCard   WhiteCard @relation(fields: [whiteCardId], references: [id], onDelete: Cascade)
 
   @@id([deckId, whiteCardId])
+  @@map("decks_white_cards")
 }
