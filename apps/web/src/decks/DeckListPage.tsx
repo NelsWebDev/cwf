@@ -18,14 +18,14 @@ const DeckListPage = () => {
   return (
     <Stack>
       <Group justify="space-between">
-        <Title order={2}>My decks</Title>
+        <Title order={2}>Decks</Title>
         <Button component={Link} to="/decks/create">
           Create deck
         </Button>
       </Group>
       {error && <Alert color="red">{error}</Alert>}
       {!decks && !error && <Loader />}
-      {decks?.length === 0 && <Text c="dimmed">You haven't created any decks yet.</Text>}
+      {decks?.length === 0 && <Text c="dimmed">No decks yet. Create the first one!</Text>}
       {decks?.map((deck) => (
         <Card key={deck.id} withBorder component={Link} to={`/decks/${deck.id}`}>
           <Group justify="space-between" wrap="nowrap">

@@ -286,7 +286,7 @@ const ManageDeckPage = () => {
       <Stack>
         <Alert color="red">Deck not found.</Alert>
         <Button component={Link} to="/decks" w="fit-content">
-          Back to my decks
+          Back to decks
         </Button>
       </Stack>
     );

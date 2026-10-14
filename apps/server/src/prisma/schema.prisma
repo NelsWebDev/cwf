@@ -60,8 +60,9 @@ model Deck {
   description    String?  @db.Text
   importedDeckId String?
   cahOfficial    Boolean  @default(false)
-  ownerId        String?
-  owner          Account? @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  // Informational only: any account can edit or delete any non-official deck.
+  createdById    String?
+  createdBy      Account? @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt

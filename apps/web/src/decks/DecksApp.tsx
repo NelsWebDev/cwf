@@ -32,7 +32,7 @@ const DeckRoutes = () => {
           <Group justify="space-between" h="100%">
             <Group gap="lg">
               <Anchor component={Link} to="/decks" c="white" fw={600}>
-                My Decks
+                Decks
               </Anchor>
               <Anchor component={Link} to="/" c="white" size="sm">
                 Back to game
