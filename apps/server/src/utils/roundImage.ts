@@ -66,7 +66,31 @@ const drawFittedText = (
   ctx.fillStyle = color;
   ctx.textBaseline = "top";
   ctx.textAlign = "left";
-  lines.forEach((l, i) => ctx.fillText(l, x, y + i * size * 1.2));
+  lines.forEach((l, i) => drawLine(ctx, l, x, y + i * size * 1.2, size, color));
+};
+
+// Underscore glyphs have gaps between them, so blanks are drawn as one continuous bar.
+const drawLine = (
+  ctx: SKRSContext2D,
+  line: string,
+  x: number,
+  y: number,
+  size: number,
+  color: string,
+) => {
+  let cx = x;
+  for (const part of line.split(/(_{2,})/)) {
+    if (!part) continue;
+    const width = ctx.measureText(part).width;
+    if (/^_{2,}$/.test(part)) {
+      const thickness = Math.max(2, Math.round(size * 0.07));
+      ctx.fillStyle = color;
+      ctx.fillRect(cx, y + size * 0.95, width, thickness);
+    } else {
+      ctx.fillText(part, cx, y);
+    }
+    cx += width;
+  }
 };
 
 const drawBackground = (ctx: SKRSContext2D) => {
