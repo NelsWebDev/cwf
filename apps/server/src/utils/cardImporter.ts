@@ -1,5 +1,5 @@
 import { prismaClient } from "../singletons";
-import { CardManager } from "../CardManager";
+import { CardManager, liveCardCounts } from "../CardManager";
 import { Prisma } from "../prisma/generated/client";
 
 
@@ -71,14 +71,17 @@ export const importDeck = async (deckCode: string) => {
     where: {
       importedDeckId: parsed.deck.importedDeckId,
       cahOfficial: false,
+      deletedAt: null,
     },
   });
 
   const newDeck = await prismaClient.$transaction(async (tx) => {
     if (existingDeck) {
-      await tx.deck.delete({
-        where: { id: existingDeck.id },
-      });
+      // Replaced by the fresh copy below; soft-deleted like any other removal.
+      const deletedAt = new Date();
+      await tx.blackCard.updateMany({ where: { decksCards: { some: { deckId: existingDeck.id } } }, data: { deletedAt } });
+      await tx.whiteCard.updateMany({ where: { decksCards: { some: { deckId: existingDeck.id } } }, data: { deletedAt } });
+      await tx.deck.update({ where: { id: existingDeck.id }, data: { deletedAt } });
     }
 
     const created = await tx.deck.create({ data: parsed.deck });
@@ -103,7 +106,7 @@ export const importDeck = async (deckCode: string) => {
 
     const newDeck = await tx.deck.findUniqueOrThrow({
       where: { id: created.id },
-      include: { _count: { select: { blackCards: true, whiteCards: true } } },
+      include: { _count: liveCardCounts },
     });
 
     return CardManager.deckFromPrismaQuery(newDeck);

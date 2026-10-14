@@ -39,6 +39,7 @@ model BlackCard {
   id         String          @id @default(cuid())
   text       String          @db.Text
   pick       Int
+  deletedAt  DateTime?
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
   decksCards DeckBlackCard[]
@@ -48,6 +49,7 @@ model BlackCard {
 model WhiteCard {
   id         String          @id @default(cuid())
   text       String          @db.Text
+  deletedAt  DateTime?
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
   decksCards DeckWhiteCard[]
@@ -64,6 +66,7 @@ model Deck {
   createdById    String?
   createdBy      Account? @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
+  deletedAt  DateTime?
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
   blackCards DeckBlackCard[]

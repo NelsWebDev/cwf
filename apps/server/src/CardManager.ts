@@ -13,17 +13,21 @@ type PopulatedDeck = Prisma.DeckGetPayload<{
   };
 }>;
 
+// Counts and lists only include cards that have not been soft-deleted.
+export const liveBlackCards = { blackCard: { deletedAt: null } } satisfies Prisma.DeckBlackCardWhereInput;
+export const liveWhiteCards = { whiteCard: { deletedAt: null } } satisfies Prisma.DeckWhiteCardWhereInput;
+export const liveCardCounts = {
+  select: {
+    blackCards: { where: liveBlackCards },
+    whiteCards: { where: liveWhiteCards },
+  },
+} satisfies Prisma.DeckCountOutputTypeDefaultArgs;
+
 export class CardManager {
   static async fetchAllDecks(): Promise<CardDeck[]> {
     const decks = await prismaClient.deck.findMany({
-      include: {
-        _count: {
-          select: {
-            blackCards: true,
-            whiteCards: true,
-          },
-        },
-      },
+      where: { deletedAt: null },
+      include: { _count: liveCardCounts },
     });
     return decks.map(CardManager.deckFromPrismaQuery);
   }
@@ -45,15 +49,8 @@ export class CardManager {
 
   public static async fetchDeck(where: Prisma.DeckWhereInput) {
     const query = await prismaClient.deck.findFirst({
-      where,
-      include: {
-        _count: {
-          select: {
-            blackCards: true,
-            whiteCards: true,
-          },
-        },
-      },
+      where: { ...where, deletedAt: null },
+      include: { _count: liveCardCounts },
     });
     return query ? CardManager.deckFromPrismaQuery(query) : null;
   }
@@ -65,10 +62,11 @@ export class CardManager {
         },
         select: {
           id: true,
+          deletedAt: true,
         },
       })
       .then((deck) => {
-        return !!deck;
+        return !!deck && !deck.deletedAt;
       });
   }
 

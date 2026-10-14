@@ -4,6 +4,7 @@ import { OAuth2Client } from "google-auth-library";
 import { DECK_LIMITS, calculatePick } from "@repo/shared/deckRules";
 import { Prisma } from "../prisma/generated/client";
 import { prismaClient } from "../singletons";
+import { liveBlackCards, liveCardCounts, liveWhiteCards } from "../CardManager";
 import {
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH,
@@ -88,7 +89,7 @@ const deckSummarySelect = {
   description: true,
   createdAt: true,
   updatedAt: true,
-  _count: { select: { blackCards: true, whiteCards: true } },
+  _count: liveCardCounts,
 } satisfies Prisma.DeckSelect;
 
 type DeckSummary = Prisma.DeckGetPayload<{ select: typeof deckSummarySelect }>;
@@ -100,7 +101,7 @@ const toSummary = ({ _count, ...deck }: DeckSummary) => ({
 });
 
 // Official CAH pack cards are shared between packs, so only non-official decks can be managed.
-const managedDeckWhere = { cahOfficial: false } satisfies Prisma.DeckWhereInput;
+const managedDeckWhere = { cahOfficial: false, deletedAt: null } satisfies Prisma.DeckWhereInput;
 
 const findDeck = async (id: string) => {
   const deck = await prismaClient.deck.findFirst({ where: { id, ...managedDeckWhere }, select: { id: true } });
@@ -113,8 +114,8 @@ const deckDetail = async (id: string) => {
     where: { id },
     select: {
       ...deckSummarySelect,
-      blackCards: { select: { blackCard: { select: { id: true, text: true, pick: true, createdAt: true } } } },
-      whiteCards: { select: { whiteCard: { select: { id: true, text: true, createdAt: true } } } },
+      blackCards: { where: liveBlackCards, select: { blackCard: { select: { id: true, text: true, pick: true, createdAt: true } } } },
+      whiteCards: { where: liveWhiteCards, select: { whiteCard: { select: { id: true, text: true, createdAt: true } } } },
     },
   });
   const { blackCards, whiteCards, ...rest } = deck;
@@ -301,11 +302,12 @@ export const createDeckRouter = () => {
     "/decks/:deckId",
     wrap<AuthedRequest>(async (req, res) => {
       const { id } = await findDeck(String(req.params.deckId));
-      // Cards in managed decks belong to exactly one deck, so they are removed with it.
+      // Soft delete. Cards in managed decks belong to exactly one deck, so they are removed with it.
+      const deletedAt = new Date();
       await prismaClient.$transaction(async (tx) => {
-        await tx.blackCard.deleteMany({ where: { decksCards: { some: { deckId: id } } } });
-        await tx.whiteCard.deleteMany({ where: { decksCards: { some: { deckId: id } } } });
-        await tx.deck.delete({ where: { id } });
+        await tx.blackCard.updateMany({ where: { deletedAt: null, decksCards: { some: { deckId: id } } }, data: { deletedAt } });
+        await tx.whiteCard.updateMany({ where: { deletedAt: null, decksCards: { some: { deckId: id } } }, data: { deletedAt } });
+        await tx.deck.update({ where: { id }, data: { deletedAt } });
       });
       res.sendStatus(204);
     }),
@@ -316,7 +318,7 @@ export const createDeckRouter = () => {
     wrap<AuthedRequest>(async (req, res) => {
       const { id } = await findDeck(String(req.params.deckId));
       const cardText = text(req.body?.text, "Card text", DECK_LIMITS.cardText)!;
-      if ((await prismaClient.deckBlackCard.count({ where: { deckId: id } })) >= DECK_LIMITS.blackCards) {
+      if ((await prismaClient.deckBlackCard.count({ where: { deckId: id, ...liveBlackCards } })) >= DECK_LIMITS.blackCards) {
         throw new HttpError(400, `A deck can have at most ${DECK_LIMITS.blackCards} black cards`);
       }
       await prismaClient.blackCard.create({
@@ -331,7 +333,7 @@ export const createDeckRouter = () => {
     wrap<AuthedRequest>(async (req, res) => {
       const { id } = await findDeck(String(req.params.deckId));
       const cardText = text(req.body?.text, "Card text", DECK_LIMITS.cardText)!;
-      if ((await prismaClient.deckWhiteCard.count({ where: { deckId: id } })) >= DECK_LIMITS.whiteCards) {
+      if ((await prismaClient.deckWhiteCard.count({ where: { deckId: id, ...liveWhiteCards } })) >= DECK_LIMITS.whiteCards) {
         throw new HttpError(400, `A deck can have at most ${DECK_LIMITS.whiteCards} white cards`);
       }
       await prismaClient.whiteCard.create({
@@ -347,7 +349,7 @@ export const createDeckRouter = () => {
       const { id } = await findDeck(String(req.params.deckId));
       const cardText = text(req.body?.text, "Card text", DECK_LIMITS.cardText)!;
       const { count } = await prismaClient.blackCard.updateMany({
-        where: { id: String(req.params.cardId), decksCards: { some: { deckId: id } } },
+        where: { id: String(req.params.cardId), deletedAt: null, decksCards: { some: { deckId: id } } },
         data: { text: cardText, pick: calculatePick(cardText) },
       });
       if (!count) throw new HttpError(404, "Card not found");
@@ -360,7 +362,7 @@ export const createDeckRouter = () => {
     wrap<AuthedRequest>(async (req, res) => {
       const { id } = await findDeck(String(req.params.deckId));
       const { count } = await prismaClient.whiteCard.updateMany({
-        where: { id: String(req.params.cardId), decksCards: { some: { deckId: id } } },
+        where: { id: String(req.params.cardId), deletedAt: null, decksCards: { some: { deckId: id } } },
         data: { text: text(req.body?.text, "Card text", DECK_LIMITS.cardText)! },
       });
       if (!count) throw new HttpError(404, "Card not found");
@@ -372,8 +374,9 @@ export const createDeckRouter = () => {
     "/decks/:deckId/black-cards/:cardId",
     wrap<AuthedRequest>(async (req, res) => {
       const { id } = await findDeck(String(req.params.deckId));
-      const { count } = await prismaClient.blackCard.deleteMany({
-        where: { id: String(req.params.cardId), decksCards: { some: { deckId: id } } },
+      const { count } = await prismaClient.blackCard.updateMany({
+        where: { id: String(req.params.cardId), deletedAt: null, decksCards: { some: { deckId: id } } },
+        data: { deletedAt: new Date() },
       });
       if (!count) throw new HttpError(404, "Card not found");
       res.json({ deck: await deckDetail(id) });
@@ -384,8 +387,9 @@ export const createDeckRouter = () => {
     "/decks/:deckId/white-cards/:cardId",
     wrap<AuthedRequest>(async (req, res) => {
       const { id } = await findDeck(String(req.params.deckId));
-      const { count } = await prismaClient.whiteCard.deleteMany({
-        where: { id: String(req.params.cardId), decksCards: { some: { deckId: id } } },
+      const { count } = await prismaClient.whiteCard.updateMany({
+        where: { id: String(req.params.cardId), deletedAt: null, decksCards: { some: { deckId: id } } },
+        data: { deletedAt: new Date() },
       });
       if (!count) throw new HttpError(404, "Card not found");
       res.json({ deck: await deckDetail(id) });

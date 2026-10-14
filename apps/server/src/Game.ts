@@ -184,6 +184,7 @@ export class Game {
       prismaClient.blackCard
         .findMany({
           where: {
+            deletedAt: null,
             decksCards: {
               some: { deckId: { in: addedDeckIds } },
             },
@@ -204,6 +205,7 @@ export class Game {
       prismaClient.whiteCard
         .findMany({
           where: {
+            deletedAt: null,
             decksCards: {
               some: { deckId: { in: addedDeckIds } },
             },

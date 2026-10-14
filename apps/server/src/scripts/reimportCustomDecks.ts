@@ -12,6 +12,7 @@ export const reimportCustomDecks = async () => {
         select: { importedDeckId: true, name: true },
         where: {
             cahOfficial: false,
+            deletedAt: null,
             importedDeckId: { not: null },
             updatedAt: {
                 lte: sinceDate,
