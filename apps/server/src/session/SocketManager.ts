@@ -8,6 +8,8 @@ import { updateAnnouncedPlayers } from "../utils/discordWebhook";
 // Close code sent when the server ends a user's connection (kick / logout). The client does not auto-retry on it.
 export const CLOSE_CODE_DISCONNECTED = 4000;
 
+const CZAR_RECONNECT_GRACE_MS = 5000;
+
 export class SocketManager {
   gameUsers: Map<string, GameUser> = new Map();
   private connections: Map<string, Set<WebSocket>> = new Map();
@@ -53,17 +55,22 @@ export class SocketManager {
     user.isActive = false;
     publish("playerLeft", user.id);
     this.syncDiscordPlayers();
-    if (
-      game.currentRound?.cardCzarId === user.id &&
-      game.currentRound?.status === RoundStatus.WAITING_FOR_PLAYERS
-    ) {
-      this.gameUsers.forEach((gameUser) => {
-        if (gameUser.isActive) {
-          gameUser.undoPlay();
-        }
-      });
-      game.nextRound();
+    const round = game.currentRound;
+    if (round?.cardCzarId !== user.id || round.status === RoundStatus.SHOWING_WINNER) {
+      return;
     }
+    // Grace period so the czar can refresh or reconnect before being skipped.
+    setTimeout(() => {
+      if (
+        user.isActive ||
+        game.currentRound?.id !== round.id ||
+        round.status === RoundStatus.SHOWING_WINNER ||
+        this.activeUsers.length === 0
+      ) {
+        return;
+      }
+      game.skipBlackCard(true);
+    }, CZAR_RECONNECT_GRACE_MS);
   }
 
   syncDiscordPlayers() {

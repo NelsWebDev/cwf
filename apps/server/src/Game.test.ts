@@ -450,6 +450,47 @@ describe("Game", () => {
     },
   );
 
+  it("moves to a new czar and returns plays when skipping with replaceCzar", () => {
+    const game = new Game();
+    const czar = makePlayer("czar");
+    const player = makePlayer("player");
+    const other = makePlayer("other");
+    mocks.activeUsers.push(czar, player, other);
+    mocks.gameUsers.set(player.id, player);
+    const card = {
+      id: "played",
+      deckIds: [],
+      text: "answer",
+      isCustom: false,
+      state: CardState.IN_USE,
+      createdAt: new Date(0),
+      updatedAt: new Date(0),
+    };
+    const blackCard = {
+      id: "b1",
+      deckIds: [],
+      text: "p",
+      pick: 1,
+      state: CardState.IN_USE,
+      createdAt: new Date(0),
+      updatedAt: new Date(0),
+    };
+    game._blackCards = [{ ...blackCard, id: "b2", state: CardState.AVAILABLE }];
+    game._currentCzar = czar as never;
+    game._currentRound = {
+      blackCard,
+      cardCzar: czar,
+      plays: { [player.id]: [card] },
+    } as never;
+
+    game.skipBlackCard(true);
+
+    expect(blackCard.state).toBe(CardState.SKIPPED);
+    expect(player.hand.get(card.id)).toBe(card);
+    expect(game.currentCardCzar).toBe(player);
+    expect(game.currentRound?.cardCzar).toBe(player);
+  });
+
   it("ends the game by clearing cards, scores, hands, and the current round", () => {
     const game = new Game();
     const winner = makePlayer("winner");

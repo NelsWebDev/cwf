@@ -328,10 +328,13 @@ export class Game {
     ];
   }
 
-  skipBlackCard() {
+  skipBlackCard(replaceCzar = false) {
     const currentRound = this._currentRound;
     currentRound.blackCard.state = CardState.SKIPPED;
-    const cardCzar = currentRound.cardCzar;
+    if (replaceCzar) {
+      this.moveToNextCzar();
+    }
+    const cardCzar = replaceCzar ? this.currentCardCzar : currentRound.cardCzar;
     const blackCard = this.drawBlackCard();
     for (const [userId, cards] of Object.entries(currentRound.plays)) {
       for (const card of cards) {
