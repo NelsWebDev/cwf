@@ -9,7 +9,8 @@ import ThemeSelector from "../../components/ThemeSelector";
 const LoginPage = () => {
   const [usernameInput, setUsernameInput] = useState(import.meta.env.VITE_AUTOFILL_USERNAME || '');
   const [passwordInput, setPasswordInput] = useState(import.meta.env.VITE_AUTOFILL_PASSWORD || '');
-  const { login, errorMessage, isAuthenticated, disconnected, reconnect } = useAuth();
+  const { login, errorMessage, isAuthenticated, disconnected, reconnect, usernameTaken, chooseUsername } = useAuth();
+  const [newUsername, setNewUsername] = useState('');
 
   if (localStorage.getItem('authToken') && !isAuthenticated && !errorMessage) {
     return <h4>Loading....</h4>
@@ -34,7 +35,19 @@ const LoginPage = () => {
             style={{ textAlign: 'center', color: 'light-dark(var(--mantine-color-red-8), var(--mantine-color-red-3))' }}>
             {errorMessage}
           </Text>)}
-        {(!disconnected || errorMessage === "You are logged out") && (<><TextInput label="Name"
+        {usernameTaken && (<>
+          <TextInput label="New name" placeholder="Your Name" required autoFocus
+            styles={{ label: { color: 'light-dark(var(--mantine-color-dark-9), var(--mantine-color-white))' } }}
+            onChange={e => setNewUsername(e.currentTarget.value)} value={newUsername}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && newUsername.trim()) {
+                chooseUsername(newUsername);
+              }
+            }} />
+          <Button fullWidth mt="xl" disabled={!newUsername.trim()} onClick={() => chooseUsername(newUsername)}>
+            Rejoin
+          </Button></>)}
+        {!usernameTaken && (!disconnected || errorMessage === "You are logged out") && (<><TextInput label="Name"
           styles={{ label: { color: 'light-dark(var(--mantine-color-dark-9), var(--mantine-color-white))' } }}
           placeholder="Your Name" required onChange={e => setUsernameInput(e.currentTarget.value)} value={usernameInput} />
           <PasswordInput label="Password" placeholder="Game password" required mt="md"
@@ -49,7 +62,7 @@ const LoginPage = () => {
           <Button fullWidth mt="xl" onClick={() => login(usernameInput, passwordInput)}>
             Sign in
           </Button></>)}
-        {disconnected && errorMessage != "You are logged out" && (
+        {!usernameTaken && disconnected && errorMessage != "You are logged out" && (
           <Button fullWidth mt="xl" onClick={() => reconnect()}>Rejoin</Button>
         )}
       </Paper>

@@ -1,8 +1,11 @@
 import { GraphQLError } from "graphql";
 import { timingSafeEqual } from "node:crypto";
+import type { TokenClaims } from "../session/token";
 import type { GameUser } from "../session/GameUser";
 
 export type GraphQLContext = {
+  /** Verified token claims, present even when the user could not be restored (e.g. username now taken) */
+  claims?: TokenClaims | undefined;
   user?: GameUser | undefined;
   admin?: boolean;
 };
@@ -15,17 +18,17 @@ export const isValidApiKey = (key: unknown): boolean => {
   return a.length === b.length && timingSafeEqual(a, b);
 };
 
-const unauthenticated = () =>
+export const invalidSession = () =>
   new GraphQLError("Invalid session. Please login again", {
     extensions: { code: "UNAUTHENTICATED" },
   });
 
 // For operations that don't act as a specific player: any logged-in user or the admin API key
 export const requireAccess = (ctx: GraphQLContext): void => {
-  if (!ctx.user && !ctx.admin) throw unauthenticated();
+  if (!ctx.user && !ctx.admin) throw invalidSession();
 };
 
 export const requireUser = (ctx: GraphQLContext): GameUser => {
-  if (!ctx.user) throw unauthenticated();
+  if (!ctx.user) throw invalidSession();
   return ctx.user;
 };

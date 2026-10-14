@@ -3,7 +3,7 @@ import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { getMainDefinition } from "@apollo/client/utilities";
 import { createClient } from "graphql-ws";
 
-export const USER_ID_KEY = "userId";
+export const TOKEN_KEY = "authToken";
 
 // Close codes sent by the server (see SocketManager / graphql-ws).
 export const CLOSE_CODE_DISCONNECTED = 4000;
@@ -21,7 +21,7 @@ export const wsClient = createClient({
   url: wsUrl.toString(),
   lazy: true,
   keepAlive: 10_000,
-  connectionParams: () => ({ userId: localStorage.getItem(USER_ID_KEY) || "" }),
+  connectionParams: () => ({ token: localStorage.getItem(TOKEN_KEY) || "" }),
   shouldRetry: (event) => {
     const code = closeCodeOf(event);
     return code !== CLOSE_CODE_DISCONNECTED && code !== CLOSE_CODE_FORBIDDEN;
@@ -32,9 +32,9 @@ const httpLink = new HttpLink({
   uri: httpUrl,
   fetch: (input, init) => {
     const headers = new Headers(init?.headers);
-    const userId = localStorage.getItem(USER_ID_KEY);
-    if (userId) {
-      headers.set("x-user-id", userId);
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (token) {
+      headers.set("authorization", `Bearer ${token}`);
     }
     return fetch(input, { ...init, headers });
   },

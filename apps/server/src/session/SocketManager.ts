@@ -1,6 +1,7 @@
 import type { WebSocket } from "ws";
 import { RoundStatus } from "../types";
 import { GameUser } from "./GameUser";
+import type { TokenClaims } from "./token";
 import { game } from "../singletons";
 import { publish } from "../pubsub";
 import { updateAnnouncedPlayers } from "../utils/discordWebhook";
@@ -93,11 +94,20 @@ export class SocketManager {
     );
   }
 
-  registerUser(username: string) {
+  /** Resolves the user behind a token, recreating them if they were removed (inactivity, restart) and their name is still free. */
+  userFromToken(claims: TokenClaims | undefined): GameUser | undefined {
+    if (!claims) return undefined;
+    const existing = this.gameUsers.get(claims.sub);
+    if (existing) return existing;
+    if (!this.usernameAvailable(claims.username)) return undefined;
+    return this.registerUser(claims.username, claims.sub, claims.discordName);
+  }
+
+  registerUser(username: string, id?: string, discordName?: string) {
     if (!this.usernameAvailable(username)) {
       throw new Error("Username already in use");
     }
-    const newUser = new GameUser(username);
+    const newUser = new GameUser(username, id, discordName);
     this.gameUsers.set(newUser.id, newUser);
     return newUser;
   }

@@ -1,10 +1,11 @@
 import { type ReactElement, useEffect, useRef, useState } from "react";
+import { CombinedGraphQLErrors } from "@apollo/client";
 import { useApolloClient } from "@apollo/client/react";
 import type { Subscription } from "rxjs";
 import type { AuthService, User } from "../../types";
 import LoginPage from "./LoginPage";
 import { AuthServiceContext } from "../Contexts";
-import { CLOSE_CODE_FORBIDDEN, USER_ID_KEY, closeCodeOf, wsClient } from "../../graphql/client";
+import { CLOSE_CODE_FORBIDDEN, TOKEN_KEY, closeCodeOf, wsClient } from "../../graphql/client";
 import {
     KICK_PLAYER_MUTATION,
     LOGIN_MUTATION,
@@ -12,6 +13,8 @@ import {
     UPDATE_USERNAME_MUTATION,
     UPDATE_DISCORD_NAME_MUTATION,
     MY_PROFILE_SUBSCRIPTION,
+    REFRESH_TOKEN_MUTATION,
+    REJOIN_MUTATION,
 } from "../../graphql/operations";
 import { getErrorMessage } from "../../utils";
 
@@ -23,6 +26,7 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
     const [errorMessage, setErrorMessage] = useState("");
     const [user, setUser] = useState<Omit<User, "isCardCzar">>();
     const [disconnected, setDisconnected] = useState(false);
+    const [usernameTaken, setUsernameTaken] = useState(false);
     const connection = useRef<Subscription | undefined>(undefined);
     // Set while we are deliberately closing the connection so the close isn't reported as a disconnect.
     const closingOnPurpose = useRef(false);
@@ -41,6 +45,43 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
                     // Reported through the websocket client's "closed" event.
                 },
             });
+    }
+
+    // Re-establishes a saved session from the stored token, without asking for the game password again.
+    const restoreSession = async (username?: string) => {
+        setIsAuthenticating(true);
+        setErrorMessage("");
+        try {
+            const { data } = await client.mutate({
+                mutation: REJOIN_MUTATION,
+                variables: username ? { username } : {},
+            });
+            if (!data) throw new Error("Failed to rejoin");
+            localStorage.setItem(TOKEN_KEY, data.rejoin.token);
+            setUser(data.rejoin.user);
+            setUsernameTaken(false);
+            connect();
+        } catch (error) {
+            setIsAuthenticated(false);
+            setIsAuthenticating(false);
+            const code = CombinedGraphQLErrors.is(error) ? error.errors[0]?.extensions?.code : undefined;
+            if (code === "USERNAME_TAKEN") {
+                setUsernameTaken(true);
+                setErrorMessage(username ? "That name is already in use. Pick another one" : "Your name is no longer available. Pick a new one");
+            } else if (code === "UNAUTHENTICATED") {
+                localStorage.removeItem(TOKEN_KEY);
+                setUsernameTaken(false);
+                setUser(undefined);
+                setErrorMessage("Your session expired. Please login again");
+            } else if (code === "BAD_USER_INPUT") {
+                setUsernameTaken(true);
+                setErrorMessage(getErrorMessage(error));
+            } else {
+                // Network or server trouble: keep the token so the user can retry.
+                setDisconnected(true);
+                setErrorMessage("Disconnected from server");
+            }
+        }
     }
 
     const disconnect = () => {
@@ -64,17 +105,16 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
             setIsAuthenticated(false);
             setIsAuthenticating(false);
             if (closeCodeOf(event) === CLOSE_CODE_FORBIDDEN) {
-                localStorage.removeItem(USER_ID_KEY);
-                setUser(undefined);
-                setErrorMessage("Invalid session. Please login again");
+                // The server no longer knows this session (e.g. it was removed for inactivity); try to restore it.
+                void restoreSession();
                 return;
             }
             setDisconnected(true);
             setErrorMessage("Disconnected from server");
         });
 
-        if (localStorage.getItem(USER_ID_KEY)) {
-            connect();
+        if (localStorage.getItem(TOKEN_KEY)) {
+            void restoreSession();
         }
 
         return () => {
@@ -94,8 +134,8 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
             if (!data) {
                 throw new Error("Login failed");
             }
-            setUser(data.login);
-            localStorage.setItem(USER_ID_KEY, data.login.id);
+            setUser(data.login.user);
+            localStorage.setItem(TOKEN_KEY, data.login.token);
             connect();
         }
         catch (error) {
@@ -123,15 +163,29 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
         setIsAuthenticating(false);
         setDisconnected(false);
         setUser(undefined);
-        localStorage.removeItem(USER_ID_KEY);
+        localStorage.removeItem(TOKEN_KEY);
+        setUsernameTaken(false);
         setErrorMessage("You are logged out");
+    }
+
+    // Token claims carry the names, so refresh it after they change to keep restored sessions current.
+    const refreshToken = async () => {
+        try {
+            const { data } = await client.mutate({ mutation: REFRESH_TOKEN_MUTATION });
+            if (data) localStorage.setItem(TOKEN_KEY, data.refreshToken);
+        } catch (error) {
+            console.error("Failed to refresh session token", error);
+        }
     }
 
     // Resolves to an error message, or undefined on success.
     const updateUsername = async (username: string) => {
         try {
             const { data } = await client.mutate({ mutation: UPDATE_USERNAME_MUTATION, variables: { username } });
-            if (data) setUser(data.updateUsername);
+            if (data) {
+                setUser(data.updateUsername);
+                await refreshToken();
+            }
             return undefined;
         } catch (error) {
             return getErrorMessage(error);
@@ -141,7 +195,10 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
     const updateDiscordName = async (discordName: string) => {
         try {
             const { data } = await client.mutate({ mutation: UPDATE_DISCORD_NAME_MUTATION, variables: { discordName } });
-            if (data) setUser(data.updateDiscordName);
+            if (data) {
+                setUser(data.updateDiscordName);
+                await refreshToken();
+            }
             return undefined;
         } catch (error) {
             return getErrorMessage(error);
@@ -155,8 +212,11 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
     }
 
     const reconnect = () => {
-        setIsAuthenticating(true);
-        connect();
+        void restoreSession();
+    }
+
+    const chooseUsername = (username: string) => {
+        void restoreSession(username);
     }
 
     const value: AuthService = {
@@ -169,6 +229,8 @@ const AuthServiceProvider = ({ children }: { children: ReactElement }) => {
         updateDiscordName,
         kickPlayer,
         reconnect,
+        usernameTaken,
+        chooseUsername,
         errorMessage,
         user,
     }

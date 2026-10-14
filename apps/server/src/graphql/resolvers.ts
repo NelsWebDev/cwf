@@ -6,7 +6,8 @@ import { importDeck } from "../utils/cardImporter";
 import { announceGameStart, postImageToDiscord } from "../utils/discordWebhook";
 import { loadCardImages } from "../utils/cardImages";
 import { renderRoundImage } from "../utils/roundImage";
-import { requireAccess, requireUser, type GraphQLContext } from "./context";
+import { tokenForUser } from "../session/token";
+import { invalidSession, requireAccess, requireUser, type GraphQLContext } from "./context";
 import { RoundStatus, type GameRound, type Rules, type WhiteCard } from "@repo/shared/types";
 
 const badInput = (message: string) =>
@@ -73,8 +74,25 @@ export const resolvers = {
       if (!password) throw badInput("Password is required");
       if (password !== process.env.GAME_PASSWORD) throw badInput("Invalid password");
       if (!socketManager.usernameAvailable(username)) throw badInput("Username already in use");
-      return socketManager.registerUser(username).toJSON();
+      const user = socketManager.registerUser(username);
+      return { token: tokenForUser(user), user: user.toJSON() };
     },
+    // Restores a session from a still-valid token. If the old username was taken meanwhile, a new one must be supplied.
+    rejoin: (_: unknown, { username }: { username?: string | null }, ctx: GraphQLContext) => {
+      if (!ctx.claims) throw invalidSession();
+      let user = ctx.user;
+      if (!user) {
+        const trimmed = username?.trim();
+        if (!trimmed) {
+          throw new GraphQLError("Username already in use", { extensions: { code: "USERNAME_TAKEN" } });
+        }
+        if (trimmed.length > 30) throw badInput("Username must be 30 characters or fewer");
+        if (!socketManager.usernameAvailable(trimmed)) throw badInput("Username already in use");
+        user = socketManager.registerUser(trimmed, ctx.claims.sub, ctx.claims.discordName);
+      }
+      return { token: tokenForUser(user), user: user.toJSON() };
+    },
+    refreshToken: (_: unknown, __: unknown, ctx: GraphQLContext) => tokenForUser(requireUser(ctx)),
     updateUsername: (_: unknown, { username }: { username: string }, ctx: GraphQLContext) => {
       const user = requireUser(ctx);
       const trimmed = username.trim();

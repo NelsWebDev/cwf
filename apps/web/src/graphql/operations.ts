@@ -24,6 +24,8 @@ export const toGame = (game: GqlGame): Game => ({
   currentRound: game.currentRound ? toRound(game.currentRound) : undefined,
 });
 
+export type AuthPayload = { token: string; user: User };
+
 const USER_FIELDS = gql`
   fragment UserFields on User {
     id
@@ -133,10 +135,15 @@ export const DECKS_QUERY = typed<{ decks: CardDeck[] }>(gql`
 `);
 
 // Mutations
-export const LOGIN_MUTATION = typed<{ login: User }, { username: string; password: string }>(gql`
+export const LOGIN_MUTATION = typed<{ login: AuthPayload }, { username: string; password: string }>(gql`
   ${USER_FIELDS}
-  mutation Login($username: String!, $password: String!) { login(username: $username, password: $password) { ...UserFields } }
+  mutation Login($username: String!, $password: String!) { login(username: $username, password: $password) { token user { ...UserFields } } }
 `);
+export const REJOIN_MUTATION = typed<{ rejoin: AuthPayload }, { username?: string }>(gql`
+  ${USER_FIELDS}
+  mutation Rejoin($username: String) { rejoin(username: $username) { token user { ...UserFields } } }
+`);
+export const REFRESH_TOKEN_MUTATION = typed<{ refreshToken: string }>(gql`mutation RefreshToken { refreshToken }`);
 export const LOGOUT_MUTATION = typed<{ logout: boolean }>(gql`mutation Logout { logout }`);
 export const UPDATE_USERNAME_MUTATION = typed<{ updateUsername: User }, { username: string }>(gql`
   ${USER_FIELDS}

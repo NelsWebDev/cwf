@@ -110,6 +110,11 @@ export const typeDefs = /* GraphQL */ `
     currentRound: GameRound
   }
 
+  type AuthPayload {
+    token: String!
+    user: User!
+  }
+
   type Query {
     me: User!
     players: [User!]!
@@ -120,7 +125,9 @@ export const typeDefs = /* GraphQL */ `
   }
 
   type Mutation {
-    login(username: String!, password: String!): User!
+    login(username: String!, password: String!): AuthPayload!
+    rejoin(username: String): AuthPayload!
+    refreshToken: String!
     logout: Boolean!
     updateUsername(username: String!): User!
     updateDiscordName(discordName: String!): User!

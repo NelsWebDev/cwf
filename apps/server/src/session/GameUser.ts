@@ -11,9 +11,10 @@ export class GameUser {
   private _hand: Map<string, WhiteCard> = new Map();
   newHandsUsed = 0;
 
-  constructor(username: string) {
-    this.id = crypto.randomUUID();
+  constructor(username: string, id: string = crypto.randomUUID(), discordName?: string) {
+    this.id = id;
     this._username = username;
+    this._discordName = discordName;
     this.isActive = false;
     if (game.started) {
       const cards = game.drawWhiteCards(10);

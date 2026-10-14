@@ -12,6 +12,9 @@ export type AuthService = {
     user?: Omit<User, "isCardCzar">;
     disconnected: boolean;
     reconnect: () => void;
+    /** True when a saved session exists but its username is now taken, so a new one must be chosen. */
+    usernameTaken: boolean;
+    chooseUsername: (username: string) => void;
     kickPlayer: (userId: string) => void;
 }
 
