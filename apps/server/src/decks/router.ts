@@ -114,16 +114,29 @@ const deckDetail = async (id: string) => {
     where: { id },
     select: {
       ...deckSummarySelect,
-      blackCards: { where: liveBlackCards, select: { blackCard: { select: { id: true, text: true, pick: true, createdAt: true } } } },
-      whiteCards: { where: liveWhiteCards, select: { whiteCard: { select: { id: true, text: true, createdAt: true } } } },
+      blackCards: { select: { blackCard: { select: { id: true, text: true, pick: true, createdAt: true, deletedAt: true } } } },
+      whiteCards: { select: { whiteCard: { select: { id: true, text: true, createdAt: true, deletedAt: true } } } },
     },
   });
   const { blackCards, whiteCards, ...rest } = deck;
   const byCreated = <T extends { createdAt: Date }>(a: T, b: T) => a.createdAt.getTime() - b.createdAt.getTime();
+  const split = <T extends { createdAt: Date; deletedAt: Date | null }>(cards: T[]) => {
+    const strip = ({ createdAt: _c, deletedAt: _d, ...card }: T) => card;
+    const sorted = [...cards].sort(byCreated);
+    return {
+      live: sorted.filter((c) => !c.deletedAt).map(strip),
+      deleted: sorted.filter((c) => c.deletedAt).map(strip),
+    };
+  };
+  const black = split(blackCards.map((c) => c.blackCard));
+  const white = split(whiteCards.map((c) => c.whiteCard));
   return {
     ...toSummary(rest),
-    blackCards: blackCards.map((c) => c.blackCard).sort(byCreated).map(({ createdAt: _, ...c }) => c),
-    whiteCards: whiteCards.map((c) => c.whiteCard).sort(byCreated).map(({ createdAt: _, ...c }) => c),
+    blackCards: black.live,
+    whiteCards: white.live,
+    // Soft-deleted cards, so they can be shown and restored.
+    deletedBlackCards: black.deleted,
+    deletedWhiteCards: white.deleted,
   };
 };
 
@@ -369,6 +382,31 @@ export const createDeckRouter = () => {
       res.json({ deck: await deckDetail(id) });
     }),
   );
+
+  const restoreCard = (kind: "black" | "white") =>
+    wrap<AuthedRequest>(async (req, res) => {
+      const { id } = await findDeck(String(req.params.deckId));
+      const cardId = String(req.params.cardId);
+      const limit = kind === "black" ? DECK_LIMITS.blackCards : DECK_LIMITS.whiteCards;
+      const live =
+        kind === "black"
+          ? await prismaClient.deckBlackCard.count({ where: { deckId: id, ...liveBlackCards } })
+          : await prismaClient.deckWhiteCard.count({ where: { deckId: id, ...liveWhiteCards } });
+      if (live >= limit) throw new HttpError(400, `A deck can have at most ${limit} ${kind} cards`);
+      const args = {
+        where: { id: cardId, deletedAt: { not: null }, decksCards: { some: { deckId: id } } },
+        data: { deletedAt: null },
+      };
+      const { count } =
+        kind === "black"
+          ? await prismaClient.blackCard.updateMany(args)
+          : await prismaClient.whiteCard.updateMany(args);
+      if (!count) throw new HttpError(404, "Card not found");
+      res.json({ deck: await deckDetail(id) });
+    });
+
+  router.post("/decks/:deckId/black-cards/:cardId/restore", restoreCard("black"));
+  router.post("/decks/:deckId/white-cards/:cardId/restore", restoreCard("white"));
 
   router.delete(
     "/decks/:deckId/black-cards/:cardId",

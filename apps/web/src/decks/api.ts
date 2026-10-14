@@ -15,7 +15,12 @@ export type DeckSummary = {
 };
 export type ManagedBlackCard = { id: string; text: string; pick: number };
 export type ManagedWhiteCard = { id: string; text: string };
-export type DeckDetail = DeckSummary & { blackCards: ManagedBlackCard[]; whiteCards: ManagedWhiteCard[] };
+export type DeckDetail = DeckSummary & {
+  blackCards: ManagedBlackCard[];
+  whiteCards: ManagedWhiteCard[];
+  deletedBlackCards: ManagedBlackCard[];
+  deletedWhiteCards: ManagedWhiteCard[];
+};
 
 export class ApiError extends Error {
   constructor(
@@ -72,4 +77,6 @@ export const deckApi = {
     request<{ deck: DeckDetail }>("PATCH", `/decks/${id}/${kind}-cards/${cardId}`, { text }),
   deleteCard: (id: string, kind: "black" | "white", cardId: string) =>
     request<{ deck: DeckDetail }>("DELETE", `/decks/${id}/${kind}-cards/${cardId}`),
+  restoreCard: (id: string, kind: "black" | "white", cardId: string) =>
+    request<{ deck: DeckDetail }>("POST", `/decks/${id}/${kind}-cards/${cardId}/restore`),
 };

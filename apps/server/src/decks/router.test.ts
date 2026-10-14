@@ -20,6 +20,7 @@ vi.mock("./accounts", async (importOriginal) => ({
   findAccountByToken: vi.fn(async () => ({ id: "account-1" })),
 }));
 
+import { DECK_LIMITS } from "@repo/shared/deckRules";
 import { createDeckRouter, DECK_API_PATH } from "./router";
 
 const db = mocks.prismaClient;
@@ -87,11 +88,47 @@ describe("deck router soft deletes", () => {
     });
   });
 
-  it("hides soft-deleted cards from deck detail", async () => {
-    await request("GET", "/decks/deck-1");
-    const select = db.deck.findUniqueOrThrow.mock.calls[0]![0].select;
-    expect(select.blackCards.where).toEqual(liveBlack);
-    expect(select.whiteCards.where).toEqual(liveWhite);
+  it("returns live and soft-deleted cards separately in deck detail", async () => {
+    const at = (n: number) => new Date(n);
+    db.deck.findUniqueOrThrow.mockResolvedValue({
+      ...emptyDeck,
+      blackCards: [
+        { blackCard: { id: "b2", text: "B2", pick: 1, createdAt: at(2), deletedAt: at(9) } },
+        { blackCard: { id: "b1", text: "B1", pick: 1, createdAt: at(1), deletedAt: null } },
+      ],
+      whiteCards: [
+        { whiteCard: { id: "w1", text: "W1", createdAt: at(1), deletedAt: at(9) } },
+        { whiteCard: { id: "w2", text: "W2", createdAt: at(2), deletedAt: null } },
+      ],
+    });
+    const { deck } = (await (await request("GET", "/decks/deck-1")).json()) as { deck: Record<string, unknown> };
+    expect(deck.blackCards).toEqual([{ id: "b1", text: "B1", pick: 1 }]);
+    expect(deck.deletedBlackCards).toEqual([{ id: "b2", text: "B2", pick: 1 }]);
+    expect(deck.whiteCards).toEqual([{ id: "w2", text: "W2" }]);
+    expect(deck.deletedWhiteCards).toEqual([{ id: "w1", text: "W1" }]);
+  });
+
+  it.each(["black", "white"] as const)("restores a soft-deleted %s card", async (color) => {
+    db[`${color}Card`].updateMany.mockResolvedValue({ count: 1 });
+    db[color === "black" ? "deckBlackCard" : "deckWhiteCard"].count.mockResolvedValue(0);
+    const response = await request("POST", `/decks/deck-1/${color}-cards/card-1/restore`);
+    expect(response.status).toBe(200);
+    expect(db[`${color}Card`].updateMany).toHaveBeenCalledWith({
+      where: { id: "card-1", deletedAt: { not: null }, decksCards: { some: { deckId: "deck-1" } } },
+      data: { deletedAt: null },
+    });
+  });
+
+  it.each(["black", "white"] as const)("returns 404 restoring a %s card that is not deleted", async (color) => {
+    db[`${color}Card`].updateMany.mockResolvedValue({ count: 0 });
+    db[color === "black" ? "deckBlackCard" : "deckWhiteCard"].count.mockResolvedValue(0);
+    expect((await request("POST", `/decks/deck-1/${color}-cards/card-1/restore`)).status).toBe(404);
+  });
+
+  it("refuses to restore a card when the deck is full", async () => {
+    db.deckBlackCard.count.mockResolvedValue(DECK_LIMITS.blackCards);
+    expect((await request("POST", "/decks/deck-1/black-cards/card-1/restore")).status).toBe(400);
+    expect(db.blackCard.updateMany).not.toHaveBeenCalled();
   });
 
   it("records the creator on new decks", async () => {
