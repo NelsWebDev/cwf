@@ -187,7 +187,11 @@ const GameServiceProvider = ({ children }: { children: ReactElement }) => {
         onData: ({ data }) => {
             const joined = data.data?.playerJoined;
             if (joined) {
-                setPlayers((prev) => [...prev.filter((p) => p.id !== joined.id), joined]);
+                setPlayers((prev) =>
+                    prev.some((p) => p.id === joined.id)
+                        ? prev.map((p) => (p.id === joined.id ? joined : p))
+                        : [...prev, joined],
+                );
             }
         },
     });

@@ -40,7 +40,7 @@ export class GameUser {
     return this._discordName;
   }
 
-  /** Name shown in Discord status messages; falls back to the username. */
+  /** Name used in Discord announcements and shared round images; falls back to the username. */
   get displayName() {
     return this._discordName || this._username;
   }

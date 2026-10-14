@@ -193,7 +193,7 @@ export const resolvers = {
           blackCardText: round.blackCard.text,
           pick: round.blackCard.pick,
           plays: Object.entries(round.plays).map(([userId, cards]) => ({
-            username: socketManager.gameUsers.get(userId)?.username ?? "Unknown",
+            username: socketManager.gameUsers.get(userId)?.displayName ?? "Unknown",
             cards: cards.map((card) => card.text),
             isWinner: userId === round.winnerId,
           })),

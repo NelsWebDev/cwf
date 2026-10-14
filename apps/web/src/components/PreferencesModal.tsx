@@ -56,7 +56,8 @@ const PreferencesModal = () => {
       <Group align="flex-end" wrap="nowrap">
         <TextInput
           style={{ flex: 1 }}
-          label="Username"
+          label="Username (in-game)"
+          description="Shown to other players in the game and chat."
           value={username}
           maxLength={30}
           error={error}
@@ -70,8 +71,8 @@ const PreferencesModal = () => {
       <Group align="flex-end" wrap="nowrap">
         <TextInput
           style={{ flex: 1 }}
-          label="Discord display name"
-          description="Optional. Shown in Discord game status. Defaults to your username."
+          label="Discord name"
+          description="Optional. Used in Discord bot announcements and shared round images instead of your username."
           placeholder={user?.username}
           value={discordName}
           maxLength={30}
