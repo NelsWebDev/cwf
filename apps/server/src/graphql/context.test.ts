@@ -33,15 +33,17 @@ describe("isValidApiKey", () => {
   });
 });
 
+const base = { room: {} as never };
+
 describe("GraphQL access guards", () => {
   it("allows a logged-in user or an admin", () => {
-    expect(() => requireAccess({ user: {} as never })).not.toThrow();
-    expect(() => requireAccess({ admin: true })).not.toThrow();
+    expect(() => requireAccess({ ...base, user: {} as never })).not.toThrow();
+    expect(() => requireAccess({ ...base, admin: true })).not.toThrow();
   });
 
   it("rejects unauthenticated access with the standard GraphQL error code", () => {
     try {
-      requireAccess({});
+      requireAccess(base);
       throw new Error("Expected requireAccess to reject the context");
     } catch (error) {
       expect(error).toMatchObject({
@@ -51,7 +53,7 @@ describe("GraphQL access guards", () => {
   });
 
   it("requires a user even when the context is admin-authenticated", () => {
-    expect(() => requireUser({ admin: true })).toThrowError(
+    expect(() => requireUser({ ...base, admin: true })).toThrowError(
       "Invalid session. Please login again",
     );
   });

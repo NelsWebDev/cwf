@@ -1,157 +1,61 @@
-import { game, socketManager } from "../singletons";
-import { publish, publishToUser } from "../pubsub";
-import { User, WhiteCard } from "../types";
+import type { HandEvents } from "../game/contracts";
+import type { WhiteCard } from "@repo/shared/types";
 
+export type PlayerProfile = {
+  username: string;
+  id?: string | undefined;
+  discordName?: string | undefined;
+};
+
+/** A person in a room: who they are, whether they are connected, and the cards they hold. */
 export class GameUser {
   readonly id: string;
-  private _username: string;
-  private _discordName?: string;
-  private _isActive: boolean = false;
-  private _timemoutDestroy?: NodeJS.Timeout | undefined;
-  private _hand: Map<string, WhiteCard> = new Map();
+  username: string;
+  discordName?: string | undefined;
+  isActive = false;
+  /** How many times the player has swapped their hand this game. */
   newHandsUsed = 0;
 
-  constructor(username: string, id: string = crypto.randomUUID(), discordName?: string) {
+  private _hand = new Map<string, WhiteCard>();
+
+  constructor(
+    { username, id = crypto.randomUUID(), discordName }: PlayerProfile,
+    private readonly events: HandEvents,
+  ) {
     this.id = id;
-    this._username = username;
-    this._discordName = discordName;
-    this.isActive = false;
-    if (game.started) {
-      const cards = game.drawWhiteCards(10);
-      this._hand = new Map(cards.map((card) => [card.id, card]));
-    }
-  }
-
-  get newHandsRemaining() {
-    return Math.max(0, (game.rules?.newHandsPerGame ?? 0) - this.newHandsUsed);
-  }
-
-  get username() {
-    return this._username;
-  }
-
-  rename(username: string) {
-    this._username = username;
-    publishToUser(this.id, "myProfile", this.toJSON());
-    publish("playerJoined", this.toJSON());
-    socketManager.syncDiscordPlayers();
-  }
-
-  get discordName() {
-    return this._discordName;
+    this.username = username;
+    this.discordName = discordName;
   }
 
   /** Name used in Discord announcements and shared round images; falls back to the username. */
   get displayName() {
-    return this._discordName || this._username;
-  }
-
-  setDiscordName(discordName: string | undefined) {
-    this._discordName = discordName;
-    publishToUser(this.id, "myProfile", this.toJSON());
-    socketManager.syncDiscordPlayers();
-  }
-
-  set isActive(isActive: boolean) {
-    // nothing has changed
-    if (this._isActive === isActive) {
-      return;
-    }
-
-    this._isActive = isActive;
-    if (isActive) {
-      if (this._timemoutDestroy) {
-        clearTimeout(this._timemoutDestroy);
-        this._timemoutDestroy = undefined;
-      }
-    } else {
-      console.log(`User ${this.username} is inactive`);
-
-      if (socketManager.activeUsers.length < 3 && game?.started) {
-        publish("holdGame", true);
-      }
-
-      this._timemoutDestroy = setTimeout(() => {
-        this._timemoutDestroy = undefined;
-        console.log(`User ${this.username} deleted due to inactivity`);
-        socketManager.gameUsers.delete(this.id);
-        if (game.players.length < 3 && game.started) {
-          game.endGame();
-        }
-      }, 1_000 * 30);
-    }
-  }
-
-  get isActive() {
-    return this._isActive;
-  }
-
-  kick() {
-    socketManager.closeConnections(this.id);
-  }
-
-  valueOf() {
-    return this.id;
-  }
-
-  toJSON(): User {
-    return {
-      id: this.id,
-      username: this.username,
-      isActive: this.isActive,
-      points: game.getPoints(this.id),
-      isCardCzar: game.currentCardCzar?.id === this.id,
-      discordName: this.discordName ?? null,
-      newHandsRemaining: this.newHandsRemaining,
-    };
-  }
-  removeWhiteCardsFromHand(whiteCards: WhiteCard[]): WhiteCard[];
-  removeWhiteCardsFromHand(whiteCardIds: string[]): WhiteCard[];
-  removeWhiteCardsFromHand(whiteCards: string[] | WhiteCard[]) {
-    if (whiteCards.length === 0) {
-      return Array.from(this.hand.values());
-    }
-    if (typeof whiteCards[0] === "string") {
-      for (const whiteCardId of whiteCards as string[]) {
-        this._hand.delete(whiteCardId);
-      }
-    } else {
-      for (const whiteCard of whiteCards as WhiteCard[]) {
-        this._hand.delete(whiteCard.id);
-      }
-    }
-    publishToUser(this.id, "myHand", Array.from(this.hand.values()));
-    return Array.from(this.hand.values());
-  }
-
-  playWhiteCards(whiteCards: WhiteCard[]) {
-    return game.currentRound?.playWhiteCards(this.id, whiteCards);
-  }
-
-  undoPlay() {
-    return game._currentRound?.undoPlay(this.id);
-  }
-
-  selectWinner(winningCardId: string) {
-    if (game.currentRound?.cardCzar.id !== this.id) {
-      throw new Error("You are not the card czar");
-    }
-    return game.currentRound?.selectWinner(winningCardId);
+    return this.discordName || this.username;
   }
 
   get hand() {
     return this._hand;
   }
-  addCardsToHand(whiteCards: WhiteCard[]) {
-    for (const whiteCard of whiteCards) {
-      this._hand.set(whiteCard.id, whiteCard);
+
+  addCardsToHand(cards: WhiteCard[]) {
+    for (const card of cards) {
+      this._hand.set(card.id, card);
     }
-    publishToUser(this.id, "givenCards", whiteCards);
+    this.events.cardsDealt(this.id, cards);
   }
-  replaceHand(whiteCards: WhiteCard[]) {
-    this._hand = new Map(whiteCards.map((card) => [card.id, card]));
-    publishToUser(this.id, "myHand", Array.from(this._hand.values()));
+
+  removeCardsFromHand(cards: WhiteCard[]) {
+    for (const card of cards) {
+      this._hand.delete(card.id);
+    }
+    this.events.handReplaced(this.id, [...this._hand.values()]);
   }
+
+  replaceHand(cards: WhiteCard[]) {
+    this._hand = new Map(cards.map((card) => [card.id, card]));
+    this.events.handReplaced(this.id, [...this._hand.values()]);
+  }
+
+  /** Empties the hand at the end of a game, without notifying the player. */
   clearHand() {
     this._hand.clear();
     this.newHandsUsed = 0;

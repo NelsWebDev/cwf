@@ -6,7 +6,9 @@ import cors from "cors";
 import { json } from "express";
 import { useServer } from "graphql-ws/use/ws";
 import { WebSocketServer } from "ws";
-import { httpServer, express, socketManager } from "../singletons";
+import { httpServer, express } from "../singletons";
+import { rooms } from "../rooms";
+import type { GameRoom } from "../room/GameRoom";
 import type { GameUser } from "../session/GameUser";
 import { verifyToken } from "../session/token";
 import { isValidApiKey, type GraphQLContext } from "./context";
@@ -15,7 +17,7 @@ import { typeDefs } from "./typeDefs";
 
 export const GRAPHQL_PATH = "/api/graphql";
 
-type ConnectionExtra = { user?: GameUser; admin?: boolean };
+type ConnectionExtra = { room: GameRoom; user?: GameUser; admin?: boolean };
 
 const bearerToken = (header: string | undefined) => header?.match(/^Bearer (.+)$/i)?.[1];
 
@@ -34,23 +36,29 @@ export async function startGraphQL() {
   const wsCleanup = useServer<Record<string, unknown>, ConnectionExtra>(
     {
       schema,
-      context: (ctx): GraphQLContext => ({ user: ctx.extra.user, admin: ctx.extra.admin }),
+      context: (ctx): GraphQLContext => ({
+        room: ctx.extra.room,
+        user: ctx.extra.user,
+        admin: ctx.extra.admin,
+      }),
       onConnect: (ctx) => {
         const params = ctx.connectionParams;
-        const user = socketManager.userFromToken(verifyToken(params?.token));
+        const room = rooms.defaultRoom;
+        const user = room.userFromToken(verifyToken(params?.token));
         const admin = isValidApiKey(params?.["x-api-key"]);
         if (!user && !admin) {
           return false;
         }
+        ctx.extra.room = room;
         ctx.extra.admin = admin;
         if (user) {
           ctx.extra.user = user;
-          socketManager.onConnection(user, ctx.extra.socket);
+          ctx.extra.room.onConnection(user, ctx.extra.socket);
         }
       },
       onClose: (ctx) => {
         if (ctx.extra.user) {
-          socketManager.onDisconnection(ctx.extra.user, ctx.extra.socket);
+          ctx.extra.room.onDisconnection(ctx.extra.user, ctx.extra.socket);
         }
       },
     },
@@ -77,9 +85,11 @@ export async function startGraphQL() {
     expressMiddleware(apollo, {
       context: async ({ req }): Promise<GraphQLContext> => {
         const claims = verifyToken(bearerToken(req.header("authorization")));
+        const room = rooms.defaultRoom;
         return {
+          room,
           claims,
-          user: socketManager.userFromToken(claims),
+          user: room.userFromToken(claims),
           admin: isValidApiKey(req.header("x-api-key")),
         };
       },

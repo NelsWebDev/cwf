@@ -1,17 +1,28 @@
 import { GraphQLError } from "graphql";
 import { CardManager } from "../CardManager";
-import { game, socketManager } from "../singletons";
-import { subscribe, subscribeToUser } from "../pubsub";
+import { subscribeToRoom, subscribeToUser, type RoomTopics } from "../pubsub";
 import { importDeck } from "../utils/cardImporter";
-import { announceGameStart, postImageToDiscord } from "../utils/discordWebhook";
-import { loadCardImages } from "../utils/cardImages";
-import { renderRoundImage } from "../utils/roundImage";
+import { shareRoundToDiscord } from "../utils/shareRound";
 import { tokenForUser } from "../session/token";
 import { invalidSession, requireAccess, requireUser, type GraphQLContext } from "./context";
-import { RoundStatus, type GameRound, type Rules, type WhiteCard } from "@repo/shared/types";
+import type { GameRoom } from "../room/GameRoom";
+import { type GameRound, type Rules, type WhiteCard } from "@repo/shared/types";
 
 const badInput = (message: string) =>
   new GraphQLError(message, { extensions: { code: "BAD_USER_INPUT" } });
+
+const MAX_NAME_LENGTH = 30;
+
+/** Trims a requested username and checks it is present, short enough and free in the room. */
+const validateUsername = (room: GameRoom, raw: string, exceptUserId?: string) => {
+  const username = raw.trim();
+  if (!username) throw badInput("Username is required");
+  if (username.length > MAX_NAME_LENGTH) {
+    throw badInput(`Username must be ${MAX_NAME_LENGTH} characters or fewer`);
+  }
+  if (!room.usernameAvailable(username, exceptUserId)) throw badInput("Username already in use");
+  return username;
+};
 
 type PlayInput = Pick<WhiteCard, "id" | "text">;
 
@@ -34,8 +45,8 @@ const withInitialValue = <T>(initial: T, live: AsyncIterator<T>): AsyncIterableI
   };
 };
 
-const broadcast = (name: Parameters<typeof subscribe>[0]) => ({
-  subscribe: () => subscribe(name),
+const broadcast = (name: keyof RoomTopics) => ({
+  subscribe: (_: unknown, __: unknown, ctx: GraphQLContext) => subscribeToRoom(ctx.room.id, name),
 });
 
 export const resolvers = {
@@ -47,14 +58,14 @@ export const resolvers = {
   },
 
   Query: {
-    me: (_: unknown, __: unknown, ctx: GraphQLContext) => requireUser(ctx).toJSON(),
+    me: (_: unknown, __: unknown, ctx: GraphQLContext) => ctx.room.describe(requireUser(ctx)),
     players: (_: unknown, __: unknown, ctx: GraphQLContext) => {
       requireAccess(ctx);
-      return socketManager.activeUsers.map((u) => u.toJSON());
+      return ctx.room.activeUsers.map((u) => ctx.room.describe(u));
     },
     game: (_: unknown, __: unknown, ctx: GraphQLContext) => {
       requireAccess(ctx);
-      return game.toJSON();
+      return ctx.room.game.toJSON();
     },
     gamePassword: (_: unknown, __: unknown, ctx: GraphQLContext) => {
       requireAccess(ctx);
@@ -69,55 +80,49 @@ export const resolvers = {
   },
 
   Mutation: {
-    login: (_: unknown, { username, password }: { username: string; password: string }) => {
-      if (!username) throw badInput("Username is required");
+    login: (_: unknown, { username, password }: { username: string; password: string }, ctx: GraphQLContext) => {
+      if (!username?.trim()) throw badInput("Username is required");
       if (!password) throw badInput("Password is required");
       if (password !== process.env.GAME_PASSWORD) throw badInput("Invalid password");
-      if (!socketManager.usernameAvailable(username)) throw badInput("Username already in use");
-      const user = socketManager.registerUser(username);
-      return { token: tokenForUser(user), user: user.toJSON() };
+      const user = ctx.room.registerUser(validateUsername(ctx.room, username));
+      return { token: tokenForUser(user), user: ctx.room.describe(user) };
     },
     // Restores a session from a still-valid token. If the old username was taken meanwhile, a new one must be supplied.
     rejoin: (_: unknown, { username }: { username?: string | null }, ctx: GraphQLContext) => {
       if (!ctx.claims) throw invalidSession();
+      const { claims } = ctx;
       let user = ctx.user;
       if (!user) {
-        const trimmed = username?.trim();
-        if (!trimmed) {
+        // The client treats this code as "ask the player to pick another name".
+        if (!username?.trim()) {
           throw new GraphQLError("Username already in use", { extensions: { code: "USERNAME_TAKEN" } });
         }
-        if (trimmed.length > 30) throw badInput("Username must be 30 characters or fewer");
-        if (!socketManager.usernameAvailable(trimmed)) throw badInput("Username already in use");
-        user = socketManager.registerUser(trimmed, ctx.claims.sub, ctx.claims.discordName);
+        user = ctx.room.registerUser(validateUsername(ctx.room, username), claims.sub, claims.discordName);
       }
-      return { token: tokenForUser(user), user: user.toJSON() };
+      return { token: tokenForUser(user), user: ctx.room.describe(user) };
     },
     refreshToken: (_: unknown, __: unknown, ctx: GraphQLContext) => tokenForUser(requireUser(ctx)),
     updateUsername: (_: unknown, { username }: { username: string }, ctx: GraphQLContext) => {
       const user = requireUser(ctx);
-      const trimmed = username.trim();
-      if (!trimmed) throw badInput("Username is required");
-      if (trimmed.length > 30) throw badInput("Username must be 30 characters or fewer");
-      if (!socketManager.usernameAvailable(trimmed, user.id)) throw badInput("Username already in use");
-      user.rename(trimmed);
-      return user.toJSON();
+      ctx.room.renameUser(user, validateUsername(ctx.room, username, user.id));
+      return ctx.room.describe(user);
     },
     updateDiscordName: (_: unknown, { discordName }: { discordName: string }, ctx: GraphQLContext) => {
       const user = requireUser(ctx);
       const trimmed = discordName.trim();
-      if (trimmed.length > 30) throw badInput("Discord name must be 30 characters or fewer");
-      user.setDiscordName(trimmed || undefined);
-      return user.toJSON();
+      if (trimmed.length > MAX_NAME_LENGTH) {
+        throw badInput(`Discord name must be ${MAX_NAME_LENGTH} characters or fewer`);
+      }
+      ctx.room.setDiscordName(user, trimmed || undefined);
+      return ctx.room.describe(user);
     },
     logout: (_: unknown, __: unknown, ctx: GraphQLContext) => {
-      const user = requireUser(ctx);
-      user.kick();
-      socketManager.gameUsers.delete(user.id);
+      ctx.room.removeUser(requireUser(ctx));
       return true;
     },
     kickPlayer: (_: unknown, { userId }: { userId: string }, ctx: GraphQLContext) => {
       requireAccess(ctx);
-      socketManager.gameUsers.get(userId)?.kick();
+      ctx.room.kick(userId);
       return true;
     },
     importDeck: async (_: unknown, { deckId }: { deckId: string }, ctx: GraphQLContext) => {
@@ -135,12 +140,12 @@ export const resolvers = {
     },
     addDeck: async (_: unknown, { deckId }: { deckId: string }, ctx: GraphQLContext) => {
       requireAccess(ctx);
-      await game.addDeck(deckId);
+      await ctx.room.game.addDeck(deckId);
       return true;
     },
     removeDeck: (_: unknown, { deckId }: { deckId: string }, ctx: GraphQLContext) => {
       requireAccess(ctx);
-      game.removeDeck(deckId);
+      ctx.room.game.removeDeck(deckId);
       return true;
     },
     updateRules: (_: unknown, { rules }: { rules: Partial<Rules> }, ctx: GraphQLContext) => {
@@ -149,8 +154,8 @@ export const resolvers = {
       const changes = Object.fromEntries(
         Object.entries(rules).filter(([, value]) => value !== null && value !== undefined),
       );
-      game.updateRules(changes);
-      return game.rules;
+      ctx.room.game.updateRules(changes);
+      return ctx.room.game.rules;
     },
     startGame: async (
       _: unknown,
@@ -158,83 +163,42 @@ export const resolvers = {
       ctx: GraphQLContext,
     ) => {
       requireAccess(ctx);
-      await game.start();
-      if (announceToDiscord) {
-        try {
-          await announceGameStart(socketManager.activeUsers.map((u) => u.displayName));
-        } catch (error) {
-          console.error("Failed to announce game start to Discord", error);
-        }
-      }
+      await ctx.room.startGame({ announce: announceToDiscord === true });
       return true;
     },
     endGame: (_: unknown, __: unknown, ctx: GraphQLContext) => {
       requireAccess(ctx);
-      game.endGame();
+      ctx.room.game.endGame();
       return true;
     },
     playCards: (_: unknown, { cards }: { cards: PlayInput[] }, ctx: GraphQLContext) => {
-      requireUser(ctx).playWhiteCards(cards as WhiteCard[]);
+      ctx.room.game.playCards(requireUser(ctx), cards as WhiteCard[]);
       return true;
     },
     undoPlay: (_: unknown, __: unknown, ctx: GraphQLContext) => {
-      requireUser(ctx).undoPlay();
+      ctx.room.game.undoPlay(requireUser(ctx));
       return true;
     },
     requestNewHand: (_: unknown, __: unknown, ctx: GraphQLContext) => {
-      game.requestNewHand(requireUser(ctx).id);
+      ctx.room.game.requestNewHand(requireUser(ctx));
       return true;
     },
     pickWinner: (_: unknown, { cardId }: { cardId: string }, ctx: GraphQLContext) => {
-      requireUser(ctx).selectWinner(cardId);
+      ctx.room.game.pickWinner(requireUser(ctx), cardId);
       return true;
     },
     shareRoundToDiscord: async (_: unknown, __: unknown, ctx: GraphQLContext) => {
       requireUser(ctx);
-      const round = game.currentRound;
-      if (!round || round.status !== RoundStatus.SHOWING_WINNER) {
-        throw new Error("There is no finished round to share");
-      }
-      if (!Object.values(round.plays).some((cards) => cards.length > 0)) {
-        throw new Error("This round has no played cards to share");
-      }
-      if (round.sharedToDiscord) {
-        throw new Error("This round was already shared to Discord");
-      }
-      round.sharedToDiscord = true;
-      try {
-        const images = await loadCardImages(
-          Object.values(round.plays).flatMap((cards) => cards.map((card) => card.text)),
-        );
-        const image = renderRoundImage({
-          images,
-          blackCardText: round.blackCard.text,
-          pick: round.blackCard.pick,
-          plays: Object.entries(round.plays).map(([userId, cards]) => ({
-            username: socketManager.gameUsers.get(userId)?.displayName ?? "Unknown",
-            cards: cards.map((card) => card.text),
-            isWinner: userId === round.winnerId,
-          })),
-        });
-        await postImageToDiscord(image, "round.png");
-      } catch (error) {
-        round.sharedToDiscord = false;
-        console.error("Failed to share round to Discord", error);
-        throw new Error("Failed to share to Discord");
-      }
+      const { room } = ctx;
+      await shareRoundToDiscord(room.game.currentRound, (userId) => room.players.findPlayer(userId)?.displayName ?? "Unknown");
       return true;
     },
     skipBlackCard: (_: unknown, __: unknown, ctx: GraphQLContext) => {
-      const user = requireUser(ctx);
-      if (game.currentCardCzar?.id !== user.id) {
-        throw new Error("You are not the card czar");
-      }
-      game.skipBlackCard();
+      ctx.room.game.skipBlackCardAsCzar(requireUser(ctx));
       return true;
     },
     voteToSkipBlackCard: (_: unknown, { vote }: { vote: boolean }, ctx: GraphQLContext) => {
-      const user = requireUser(ctx);
-      game.currentRound?.voteToSkip(user.id, vote);
+      ctx.room.game.voteToSkip(requireUser(ctx), vote);
       return true;
     },
   },
@@ -244,7 +208,7 @@ export const resolvers = {
       subscribe: (_: unknown, __: unknown, ctx: GraphQLContext) => {
         const user = requireUser(ctx);
         return withInitialValue(
-          { myProfile: user.toJSON() },
+          { myProfile: ctx.room.describe(user) },
           subscribeToUser(user.id, "myProfile"),
         );
       },

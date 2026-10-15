@@ -1,131 +1,50 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-const mocks = vi.hoisted(() => ({
-  publish: vi.fn(),
-  publishToUser: vi.fn(),
-  game: {
-    started: false,
-    players: [],
-    getPoints: vi.fn(() => 0),
-    drawWhiteCards: vi.fn(() => []),
-    currentCardCzar: undefined,
-  },
-  gameUsers: new Map(),
-  activeUsers: [] as unknown[],
-  closeConnections: vi.fn(),
-}));
-
-vi.mock("../singletons", () => ({
-  game: mocks.game,
-  socketManager: {
-    gameUsers: mocks.gameUsers,
-    get activeUsers() {
-      return mocks.activeUsers;
-    },
-    closeConnections: mocks.closeConnections,
-    syncDiscordPlayers: vi.fn(),
-  },
-}));
-
-vi.mock("../pubsub", () => ({
-  publish: mocks.publish,
-  publishToUser: mocks.publishToUser,
-}));
-
+import { describe, expect, it } from "vitest";
+import { makeEvents, makeWhiteCard } from "../testing/fakes";
 import { GameUser } from "./GameUser";
-import { CardState, type WhiteCard } from "@repo/shared/types";
 
-const makeCard = (id: string): WhiteCard => ({
-  id,
-  deckIds: [],
-  text: `Answer ${id}`,
-  isCustom: false,
-  state: CardState.IN_USE,
-  createdAt: new Date(0),
-  updatedAt: new Date(0),
-});
+const setup = (profile = { username: "player" }) => {
+  const events = makeEvents();
+  return { events, user: new GameUser(profile, events) };
+};
 
-describe("GameUser hand updates", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.spyOn(console, "log").mockImplementation(() => {});
-    mocks.publish.mockClear();
-    mocks.publishToUser.mockClear();
-    mocks.game.started = false;
-    mocks.game.players = [];
-    mocks.game.getPoints.mockClear();
-    mocks.game.drawWhiteCards.mockClear();
-    mocks.gameUsers.clear();
-    mocks.activeUsers.length = 0;
+describe("GameUser", () => {
+  it("generates an id unless one is given", () => {
+    expect(setup().user.id).toBeTruthy();
+    expect(setup({ username: "x", id: "fixed" } as never).user.id).toBe("fixed");
   });
 
-  afterEach(() => {
-    vi.clearAllTimers();
-    vi.useRealTimers();
-    vi.restoreAllMocks();
+  it("prefers the Discord name for display", () => {
+    const { user } = setup();
+    expect(user.displayName).toBe("player");
+    user.discordName = "disc";
+    expect(user.displayName).toBe("disc");
   });
 
-  it("publishes the complete hand after removing played cards", () => {
-    const user = new GameUser("player");
-    const first = makeCard("first");
-    const second = makeCard("second");
+  it("announces the cards it is given", () => {
+    const { user, events } = setup();
+    const card = makeWhiteCard("a");
+    user.addCardsToHand([card]);
+    expect(user.hand.get("a")).toBe(card);
+    expect(events.cardsDealt).toHaveBeenCalledWith(user.id, [card]);
+  });
+
+  it("publishes the complete hand after removing cards", () => {
+    const { user, events } = setup();
+    const first = makeWhiteCard("first");
+    const second = makeWhiteCard("second");
     user.addCardsToHand([first, second]);
-    mocks.publishToUser.mockClear();
 
-    user.removeWhiteCardsFromHand([first]);
+    user.removeCardsFromHand([first]);
 
-    expect(mocks.publishToUser).toHaveBeenCalledWith(user.id, "myHand", [second]);
+    expect(events.handReplaced).toHaveBeenCalledWith(user.id, [second]);
   });
 
-  it("publishes added cards to the user after updating the server hand", () => {
-    const user = new GameUser("player");
-    const heldCard = makeCard("held");
-    const returnedCard = makeCard("returned");
-    user.addCardsToHand([heldCard]);
-
-    user.addCardsToHand([returnedCard]);
-
-    expect(user.hand.get(returnedCard.id)).toBe(returnedCard);
-    expect(mocks.publishToUser).toHaveBeenLastCalledWith(user.id, "givenCards", [
-      returnedCard,
-    ]);
-  });
-});
-
-describe("GameUser rename", () => {
-  beforeEach(() => {
-    vi.spyOn(console, "log").mockImplementation(() => {});
-    mocks.publish.mockClear();
-    mocks.publishToUser.mockClear();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("changes the username and keeps the id", () => {
-    const user = new GameUser("old");
-    const id = user.id;
-
-    user.rename("new");
-
-    expect(user.username).toBe("new");
-    expect(user.id).toBe(id);
-  });
-
-  it("tells the user and every client about the new name", () => {
-    const user = new GameUser("old");
-
-    user.rename("new");
-
-    expect(mocks.publishToUser).toHaveBeenCalledWith(
-      user.id,
-      "myProfile",
-      expect.objectContaining({ id: user.id, username: "new" }),
-    );
-    expect(mocks.publish).toHaveBeenCalledWith(
-      "playerJoined",
-      expect.objectContaining({ id: user.id, username: "new" }),
-    );
+  it("replaces and clears the hand", () => {
+    const { user } = setup();
+    user.addCardsToHand([makeWhiteCard("a")]);
+    user.replaceHand([makeWhiteCard("b")]);
+    expect([...user.hand.keys()]).toEqual(["b"]);
+    user.clearHand();
+    expect(user.hand.size).toBe(0);
   });
 });

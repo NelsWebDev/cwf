@@ -1,68 +1,55 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-const mocks = vi.hoisted(() => ({
-  usernameAvailable: vi.fn(),
-}));
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../CardManager", () => ({ CardManager: {} }));
-vi.mock("../singletons", () => ({
-  game: {},
-  socketManager: { usernameAvailable: mocks.usernameAvailable },
-}));
-vi.mock("../pubsub", () => ({ subscribe: vi.fn(), subscribeToUser: vi.fn() }));
 vi.mock("../utils/cardImporter", () => ({ importDeck: vi.fn() }));
-vi.mock("../utils/discordWebhook", () => ({ announceGameStart: vi.fn(), postImageToDiscord: vi.fn() }));
-vi.mock("../utils/roundImage", () => ({ renderRoundImage: vi.fn() }));
+vi.mock("../utils/shareRound", () => ({ shareRoundToDiscord: vi.fn() }));
 
 import { resolvers } from "./resolvers";
 
 const makeCtx = () => {
-  const user = {
-    id: "u1",
-    rename: vi.fn(),
-    toJSON: () => ({ id: "u1", username: "renamed" }),
+  const user = { id: "u1" };
+  const room = {
+    usernameAvailable: vi.fn(() => true),
+    renameUser: vi.fn(),
+    describe: () => ({ id: "u1", username: "renamed" }),
   };
-  return { user, ctx: { user } as never };
+  return { user, room, ctx: { user, room } as never };
 };
 
 const updateUsername = (username: string, ctx: never) =>
   resolvers.Mutation.updateUsername({}, { username }, ctx);
 
 describe("updateUsername mutation", () => {
-  beforeEach(() => {
-    mocks.usernameAvailable.mockReset().mockReturnValue(true);
-  });
-
   it("renames the user with a trimmed name and returns the profile", () => {
-    const { user, ctx } = makeCtx();
+    const { room, ctx } = makeCtx();
 
     const result = updateUsername("  renamed  ", ctx);
 
-    expect(user.rename).toHaveBeenCalledWith("renamed");
-    expect(mocks.usernameAvailable).toHaveBeenCalledWith("renamed", "u1");
+    expect(room.renameUser).toHaveBeenCalledWith({ id: "u1" }, "renamed");
+    expect(room.usernameAvailable).toHaveBeenCalledWith("renamed", "u1");
     expect(result).toEqual({ id: "u1", username: "renamed" });
   });
 
   it("rejects blank names", () => {
-    const { user, ctx } = makeCtx();
+    const { room, ctx } = makeCtx();
 
     expect(() => updateUsername("   ", ctx)).toThrowError("Username is required");
-    expect(user.rename).not.toHaveBeenCalled();
+    expect(room.renameUser).not.toHaveBeenCalled();
   });
 
   it("rejects names longer than 30 characters", () => {
-    const { user, ctx } = makeCtx();
+    const { room, ctx } = makeCtx();
 
     expect(() => updateUsername("x".repeat(31), ctx)).toThrowError(/30 characters/);
-    expect(user.rename).not.toHaveBeenCalled();
+    expect(room.renameUser).not.toHaveBeenCalled();
   });
 
   it("rejects names already in use", () => {
-    mocks.usernameAvailable.mockReturnValue(false);
-    const { user, ctx } = makeCtx();
+    const { room, ctx } = makeCtx();
+    room.usernameAvailable.mockReturnValue(false);
 
     expect(() => updateUsername("taken", ctx)).toThrowError("Username already in use");
-    expect(user.rename).not.toHaveBeenCalled();
+    expect(room.renameUser).not.toHaveBeenCalled();
   });
 
   it("requires a logged-in user", () => {

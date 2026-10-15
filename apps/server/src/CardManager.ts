@@ -1,6 +1,6 @@
 import { Prisma } from "./prisma/generated/client";
 import { prismaClient } from "./singletons";
-import { CardDeck, CardState, WhiteCard } from "@repo/shared/types";
+import { CardDeck } from "@repo/shared/types";
 
 type PopulatedDeck = Prisma.DeckGetPayload<{
   include: {
@@ -68,17 +68,5 @@ export class CardManager {
       .then((deck) => {
         return !!deck && !deck.deletedAt;
       });
-  }
-
-  static makeBlankWhiteCards(number: number): WhiteCard[] {
-    return Array.from({ length: number }).map(() => ({
-      id: crypto.randomUUID(),
-      deckIds: [],
-      text: "",
-      state: CardState.AVAILABLE,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      isCustom: true,
-    }));
   }
 }
