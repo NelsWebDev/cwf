@@ -10,6 +10,7 @@
     "start": "NODE_ENV=production node dist/index.js",
     "build": "prisma generate && tsc --noEmit && node esbuild.config.mjs",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "import:cah": "tsx src/scripts/cahImporter.ts",
     "import:custom": "tsx src/scripts/importCustomDeck.ts"
   },
@@ -36,6 +37,7 @@
     "@types/cors": "^2.8.5",
     "@types/node": "^22.15.2",
     "@types/ws": "^8.18.2",
+    "@vitest/coverage-v8": "5.0.3",
     "esbuild": "^0.28.2",
     "prisma": "^7.10.0",
     "typescript": "^5.8.3",

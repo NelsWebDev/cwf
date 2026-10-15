@@ -31,3 +31,5 @@ dist-ssr
 .turbo
 apps/server/public
 apps/server/src/prisma/generated
+
+coverage
