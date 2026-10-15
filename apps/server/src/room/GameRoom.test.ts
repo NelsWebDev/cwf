@@ -233,3 +233,36 @@ describe("GameRoom czar disconnect", () => {
     expect(room.game.currentRound).toBe(round);
   });
 });
+
+describe("GameRoom Discord failures", () => {
+  beforeEach(() => vi.spyOn(console, "error").mockImplementation(() => {}));
+  afterEach(() => vi.restoreAllMocks());
+
+  it("still starts the game when the start announcement fails", async () => {
+    const { room, announcer } = setup();
+    ["a", "b", "c"].forEach((name) => room.onConnection(room.registerUser(name), makeSocket()));
+    announcer.announceGameStart.mockRejectedValue(new Error("discord down"));
+
+    await room.startGame({ announce: true });
+
+    expect(room.game.started).toBe(true);
+    expect(console.error).toHaveBeenCalledWith("Failed to announce game start to Discord", expect.any(Error));
+  });
+
+  it("logs, rather than throws, when the player list cannot be synced", async () => {
+    const { room, announcer } = setup();
+    announcer.updatePlayers.mockRejectedValue(new Error("discord down"));
+
+    room.onConnection(room.registerUser("a"), makeSocket());
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(console.error).toHaveBeenCalledWith("Failed to update Discord announcement", expect.any(Error));
+  });
+
+  it("does not start when the game cannot start, and never announces", async () => {
+    const { room, announcer } = setup();
+    await expect(room.startGame({ announce: true })).rejects.toThrow("Not enough players");
+    expect(announcer.announceGameStart).not.toHaveBeenCalled();
+  });
+});

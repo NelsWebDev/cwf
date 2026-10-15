@@ -371,3 +371,29 @@ describe("Game white card supply", () => {
     expect(game.currentRound).toBeUndefined();
   });
 });
+
+describe("Game.undoPlay", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it("returns the played card to the player's hand", async () => {
+    const { game, others } = await startedGame();
+    const player = others[0]!;
+    const card = [...player.hand.values()][0]!;
+    game.playCards(player, [card]);
+    expect(player.hand.has(card.id)).toBe(false);
+
+    game.undoPlay(player);
+
+    expect(player.hand.has(card.id)).toBe(true);
+  });
+
+  it("rejects undo when no game is running", () => {
+    const { game, players } = setup();
+    expect(() => game.undoPlay(players[0]!)).toThrow("Game has not started");
+    expect(() => game.voteToSkip(players[0]!, true)).toThrow("Game has not started");
+  });
+});

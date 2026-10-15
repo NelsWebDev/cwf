@@ -245,3 +245,26 @@ describe("GameRound sitting out", () => {
     expect(() => round.sitOut(others[1]!)).toThrow("Undo your play before sitting out");
   });
 });
+
+describe("GameRound phase guards", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  const inSelectingPhase = () => {
+    const ctx = setup(3);
+    ctx.play(ctx.others[0]!);
+    ctx.play(ctx.others[1]!);
+    vi.advanceTimersByTime(UNDO_WINDOW_MS);
+    return ctx;
+  };
+
+  it("rejects skip votes once plays are revealed", () => {
+    const { round, others } = inSelectingPhase();
+    expect(() => round.voteToSkip(others[0]!, true)).toThrow("Cannot vote to skip in this phase");
+  });
+
+  it("rejects sitting out once plays are revealed", () => {
+    const { round, others } = inSelectingPhase();
+    expect(() => round.assertCanSitOut(others[0]!)).toThrow("Cannot sit out in this phase");
+  });
+});

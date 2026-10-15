@@ -84,3 +84,10 @@ describe("WhiteCardPile", () => {
     expect(pile.available).toHaveLength(2);
   });
 });
+
+describe("pile sizes", () => {
+  it("reports how many cards each pile holds", () => {
+    expect(new BlackCardPile(makeBlackCards(4)).size).toBe(4);
+    expect(new WhiteCardPile(makeWhiteCards(6)).size).toBe(6);
+  });
+});
