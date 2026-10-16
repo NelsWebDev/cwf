@@ -1,9 +1,12 @@
 {
-  "name": "cwf",
+  "name": "@nelswebdev/cards-with-friends",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.0.0",
   "type": "module",
-  "repository": "https://github.com/NelsWebDev/cwf",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NelsWebDev/cards-with-friends.git"
+  },
   "author": "Nels Romerdahl <7355705+NelsWebDev@users.noreply.github.com>",
   "scripts": {
     "dev": "pnpm --filter @repo/server dev",
