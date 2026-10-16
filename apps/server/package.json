@@ -10,6 +10,7 @@
     "start": "NODE_ENV=production node dist/index.js",
     "build": "prisma generate && tsc --noEmit && node esbuild.config.mjs",
     "test": "vitest run",
+    "test:integration": "tsx src/scripts/testIntegration.ts",
     "test:coverage": "vitest run --coverage",
     "import:cah": "tsx src/scripts/cahImporter.ts",
     "import:custom": "tsx src/scripts/importCustomDeck.ts"

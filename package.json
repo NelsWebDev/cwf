@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "pnpm --filter @repo/server dev",
     "test": "pnpm --filter @repo/server test",
+    "test:integration": "pnpm --filter @repo/server test:integration",
     "test:coverage": "pnpm --filter @repo/server test:coverage",
     "prisma": "pnpm --filter @repo/server prisma",
     "import:cah": "pnpm --filter @repo/server import:cah",

@@ -1,31 +1,18 @@
 declare namespace NodeJS {
   interface ProcessEnv {
-    /**
-     * @prop  The URL of the database
-     */
+    NODE_ENV?: string;
+    HTTP_PORT?: string;
     DATABASE_URL?: string;
-    /**
-     * @prop port for the http server
-     */
-    PORT?: string;
-    /**
-     * @prop Password for the game
-     */
     GAME_PASSWORD?: string;
-
-    /**
-     * @prop The URL for the frontend of the application
-     */
-    FRONTEND_URL?: string;
+    JWT_SECRET?: string;
+    ADMIN_API_KEY?: string;
     APP_URL?: string;
+    FRONTEND_URL?: string;
     GOOGLE_CLIENT_ID?: string;
     GOOGLE_CLIENT_SECRET?: string;
     GOOGLE_REDIRECT_URI?: string;
-
-    /**
-     * @prop The URL for the backend of the application
-     */
-    BACKEND_URL?: string;
-
+    DISCORD_WEBHOOK_URL?: string;
+    TEST_DATABASE_URL?: string;
+    SHADOW_DATABASE_URL?: string;
   }
 }

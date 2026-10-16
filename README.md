@@ -74,3 +74,24 @@ The current server setup uses one default room. See the [UML class and interacti
 | `pnpm setup:hooks` | Install this clone's Git hooks |
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the pre-push test hook.
+
+## PostgreSQL integration tests
+
+The regular `pnpm test` suite uses isolated unit-test doubles and does not connect to PostgreSQL. The optional integration suite exercises Prisma queries against a real PostgreSQL database:
+
+1. Create a dedicated test database that is different from both the application database and Prisma's shadow database. For a local PostgreSQL server, for example:
+
+   ```sh
+   createdb cwf_test
+   export TEST_DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/cwf_test"
+   ```
+
+2. Run the integration suite:
+
+   ```sh
+   pnpm test:integration
+   ```
+
+The command generates Prisma Client, syncs the current Prisma schema to `TEST_DATABASE_URL` with `prisma db push`, then runs the integration tests. It refuses to run if the test URL points at the same database as `DATABASE_URL` or `SHADOW_DATABASE_URL`. The repository's checked-in migrations are incremental changes to an existing schema, not a complete initial migration history, so `migrate deploy` cannot initialize a blank test database. `db push` prepares the database for these query tests; it does not test the migration history. It runs without `--force-reset` or `--accept-data-loss`.
+
+The suite creates uniquely named test rows and removes only those rows afterward. Do not point it at Prisma's shadow database: Prisma may create and drop objects there while calculating migrations.
