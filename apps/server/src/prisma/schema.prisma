@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client"
   output   = "./generated"
@@ -10,13 +7,12 @@ datasource db {
   provider = "postgres"
 }
 
-// Deck manager accounts. Separate from game players (User / GameUser).
 model Account {
   id           String           @id @default(cuid())
   email        String           @unique
   passwordHash String?
   createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  updatedAt    DateTime         @default(now()) @updatedAt
   decks        Deck[]
   sessions     AccountSession[]
 
@@ -31,54 +27,54 @@ model AccountSession {
   account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   @@index([accountId])
-
   @@map("users_sessions")
 }
 
 model BlackCard {
   id         String          @id @default(cuid())
-  text       String          @db.Text
+  text       String
   pick       Int
-  deletedAt  DateTime?
   createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
+  updatedAt  DateTime        @default(now()) @updatedAt
+  deletedAt  DateTime?
   decksCards DeckBlackCard[]
+
   @@map("black_cards")
 }
 
 model WhiteCard {
   id         String          @id @default(cuid())
-  text       String          @db.Text
-  deletedAt  DateTime?
+  text       String
   createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
+  updatedAt  DateTime        @default(now()) @updatedAt
+  deletedAt  DateTime?
   decksCards DeckWhiteCard[]
+
   @@map("white_cards")
 }
 
 model Deck {
-  id             String   @id @default(cuid())
-  name           String   @db.Text
-  description    String?  @db.Text
+  id             String          @id @default(cuid())
+  name           String
+  description    String?
   importedDeckId String?
-  cahOfficial    Boolean  @default(false)
-  // Informational only: any account can edit or delete any non-official deck.
+  cahOfficial    Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @default(now()) @updatedAt
   createdById    String?
-  createdBy      Account? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?
+  createdBy      Account?        @relation(fields: [createdById], references: [id])
+  blackCards     DeckBlackCard[]
+  whiteCards     DeckWhiteCard[]
 
-  deletedAt  DateTime?
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
-  blackCards DeckBlackCard[]
-  whiteCards DeckWhiteCard[]
   @@map("decks")
 }
 
 model DeckBlackCard {
   deckId      String
   blackCardId String
-  deck        Deck      @relation(fields: [deckId], references: [id], onDelete: Cascade)
   blackCard   BlackCard @relation(fields: [blackCardId], references: [id], onDelete: Cascade)
+  deck        Deck      @relation(fields: [deckId], references: [id], onDelete: Cascade)
 
   @@id([deckId, blackCardId])
   @@map("decks_black_cards")
